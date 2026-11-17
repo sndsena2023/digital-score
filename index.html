@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>P.6 SmartScore - ระบบบันทึกคะแนน ป.6</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <style>
+    body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .th-wrap {
+      width: 78px;
+      min-width: 78px;
+      max-width: 78px;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+    .th-vertical {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+      height: 135px;
+      padding: 6px 4px;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+    @media print {
+      body { background: #ffffff !important; }
+      .no-print { display: none !important; }
+      #printSheetArea {
+        display: block !important;
+        width: 100% !important;
+      }
+      .qr-card-item {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .room-page-break {
+        break-before: page;
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-12">
+
+  <!-- ส่วนหน้าจอใช้งานปกติ (ซ่อนอัตโนมัติเวลาสั่งพิมพ์) -->
+  <div class="no-print">
+    <!-- Top Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">P6</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="font-bold text-lg text-slate-800">P.6 SmartScore</h1>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">จำนวนเต็ม • เชื่อม Sheet DB อัตโนมัติ</span>
+            </div>
+            <p class="text-xs text-slate-500">รายชื่อกลาง ป.6-1, ป.6-2, ป.6-3 (สังคมศึกษา • ประวัติศาสตร์ • การงานอาชีพ)</p>
+          </div>
+        </div>
+
+        <!-- แถบสถานะการซิงค์ DB + ปุ่มเครื่องมือหลัก -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- ป้ายแสดงสถานะการซิงค์กับ Google Sheet DB -->
+          <div id="syncBadge" onclick="syncToSheet(false)" title="คลิกเพื่อซิงค์ข้อมูลกับ Google Sheet ทันที"
+            class="cursor-pointer select-none text-xs px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-medium transition hover:opacity-90">
+            <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span id="syncSpinner" class="hidden w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+            <span id="syncText">พร้อมเชื่อมต่อ DB</span>
+          </div>
+
+          <button onclick="loadFromSheet(false)" class="text-xs px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium shadow-sm flex items-center gap-1">
+            🔄 โหลดข้อมูล/รายชื่อจาก Sheet
+          </button>
+          <button onclick="openQrPrintModal()" class="text-xs px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-medium shadow-sm">
+            🖨️ พิมพ์บัตร QR ติดสมุด
+          </button>
+          <button onclick="openScanModal()" class="text-xs px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm">
+            📷 สแกน QR ลงคะแนน
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 mt-5 space-y-5">
+
+      <!-- 1. เลือกรายวิชา -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button onclick="selectSubject('soc')" id="sub_soc" class="p-4 rounded-2xl border-2 text-left transition flex items-center justify-between"></button>
+        <button onclick="selectSubject('his')" id="sub_his" class="p-4 rounded-2xl border-2 text-left transition flex items-center justify-between"></button>
+        <button onclick="selectSubject('occ')" id="sub_occ" class="p-4 rounded-2xl border-2 text-left transition flex items-center justify-between"></button>
+      </div>
+
+      <!-- 2. เลือกห้องเรียน (ป.6-1, ป.6-2, ป.6-3) + หน่วย + ตั้งค่าช่องคะแนน -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold text-slate-500 mr-1">แท็บห้องเรียน:</span>
+          <button onclick="selectRoom('ป.6-1')" id="room_1" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border"></button>
+          <button onclick="selectRoom('ป.6-2')" id="room_2" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border"></button>
+          <button onclick="selectRoom('ป.6-3')" id="room_3" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border"></button>
+
+          <span class="text-slate-300 mx-1">|</span>
+          <span class="text-xs font-semibold text-slate-500">หน่วยการเรียนรู้:</span>
+          <select id="unitSelect" onchange="selectUnit(this.value)" class="text-xs border border-slate-300 rounded-xl px-3 py-1.5 bg-slate-50 font-medium"></select>
+          <button onclick="addNewUnit()" class="text-xs px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium">+ เพิ่มหน่วย</button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="toggleHeaderStyle()" id="headerStyleBtn" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 font-medium">
+            📐 หัวตาราง: ตัดบรรทัดพอดีช่องแคบ
+          </button>
+          <button onclick="openUnitConfigModal()" class="text-xs px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium shadow-sm">
+            ⚙️ กำหนดจำนวนช่องคะแนนดิบ & ช่องเฉลี่ย
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. ตารางบันทึกคะแนน -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse">
+            <thead id="gradeTableHead" class="bg-slate-800 text-white"></thead>
+            <tbody id="gradeTableBody" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal 1: ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนอิสระ -->
+    <div id="unitConfigModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="font-bold text-base">⚙️ ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนน</h3>
+          <button onclick="closeModal('unitConfigModal')" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold block mb-1">ชื่อหน่วยการเรียนรู้</label>
+              <input id="cfgUnitName" type="text" class="w-full border rounded-xl px-3 py-2" />
+            </div>
+            <div>
+              <label class="font-semibold block mb-1">วิธีคำนวณคะแนนดิบเข้าช่องสรุป</label>
+              <select id="cfgCalcMode" onchange="renderTaskConfigList()" class="w-full border rounded-xl px-3 py-2 bg-slate-50">
+                <option value="all">นำคะแนนดิบรวมทั้งหมด มาเฉลี่ยตามสัดส่วนเข้าทุกช่องสรุป</option>
+                <option value="split">แยกผูกชิ้นงานดิบ ว่าแต่ละชิ้นให้เข้าช่องสรุปช่องไหน</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bg-indigo-50/80 p-3.5 rounded-2xl border border-indigo-100 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="font-bold text-indigo-950 text-sm">1. ช่องคะแนนเฉลี่ย/สรุปประจำหน่วย</span>
+                <p class="text-[11px] text-indigo-700">กำหนดจำนวนช่องสรุปที่ต้องการนำคะแนนดิบไปเฉลี่ย (ค่าเริ่มต้น 2 ช่อง)</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-semibold text-indigo-900">จำนวนช่องสรุป:</span>
+                <input id="cfgSummaryCountInput" type="number" min="1" max="10" class="w-16 border border-indigo-300 rounded-lg px-2 py-1 text-center font-bold bg-white" />
+                <button onclick="applySummaryCount()" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700">ตั้งจำนวนช่อง</button>
+              </div>
+            </div>
+            <div id="cfgSummaryColList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+          </div>
+
+          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="font-bold text-slate-800 text-sm">2. ช่องเก็บคะแนนดิบ (ชิ้นงาน/ใบงาน)</span>
+                <p class="text-[11px] text-slate-500">ระบุจำนวนช่องที่ต้องการ หรือกดเพิ่ม/ลบรายช่องได้เลย</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-semibold text-slate-700">จำนวนช่องงานดิบ:</span>
+                <input id="cfgTaskCountInput" type="number" min="1" max="30" class="w-16 border border-slate-300 rounded-lg px-2 py-1 text-center font-bold bg-white" />
+                <button onclick="applyTaskCount()" class="px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium hover:bg-slate-900">ตั้งจำนวนช่อง</button>
+                <button onclick="addTaskInModal()" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700">+ เพิ่มทีละช่อง</button>
+              </div>
+            </div>
+            <div id="cfgTaskList" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button onclick="closeModal('unitConfigModal')" class="px-4 py-2 rounded-xl border text-xs">ยกเลิก</button>
+          <button onclick="saveUnitConfig()" class="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold shadow-sm">💾 บันทึกการตั้งค่าช่องคะแนน</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2: สแกน QR Code พร้อมระบบเช็กสแกนข้ามห้อง -->
+    <div id="scanModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="font-bold text-base">📷 สแกน QR / รหัสนักเรียน เพื่อลงคะแนน</h3>
+          <button onclick="closeScanModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="font-semibold block mb-1">เลือกช่องงานดิบที่จะลงคะแนน</label>
+            <select id="scanTaskSelect" class="w-full border rounded-xl px-2.5 py-2 bg-slate-50"></select>
+          </div>
+          <div>
+            <label class="font-semibold block mb-1">คะแนนที่ให้ (จำนวนเต็ม)</label>
+            <input id="scanDefaultScore" type="number" class="w-full border rounded-xl px-2.5 py-2" value="10" />
+          </div>
+          <div class="col-span-2">
+            <label class="font-semibold block mb-1">กรณีสแกนเจอเด็กผิดห้อง (ข้ามห้อง ป.6-1 / ป.6-2 / ป.6-3)</label>
+            <select id="crossRoomMode" class="w-full border rounded-xl px-2.5 py-2 bg-amber-50 border-amber-300">
+              <option value="ask">⚠️ แจ้งเตือนและถามก่อนบันทึก (แนะนำ)</option>
+              <option value="auto">⚡ บันทึกลงห้องจริงของนักเรียนให้อัตโนมัติ</option>
+              <option value="block">🚫 บล็อก ไม่ให้ลงคะแนนข้ามห้อง</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="qrReader" class="w-full rounded-xl overflow-hidden bg-slate-900"></div>
+
+        <div class="flex gap-2 text-xs">
+          <input id="manualScanInput" type="text" placeholder="พิมพ์รหัสนักเรียน เช่น 6101 หรือสแกนจากป้าย QR" class="flex-1 border rounded-xl px-3 py-2" onkeydown="if(event.key==='Enter') handleScanCode(this.value)" />
+          <button onclick="handleScanCode(document.getElementById('manualScanInput').value)" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium">ตกลง</button>
+        </div>
+
+        <div id="crossRoomAlert" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-xs space-y-2">
+          <div id="crossRoomMsg" class="font-semibold text-amber-900"></div>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnCrossSaveKeep" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-medium">บันทึกลงห้องจริงของ นร. ทันที</button>
+            <button id="btnCrossSwitchRoom" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium">สลับหน้าจอไปห้องนั้นแล้วบันทึก</button>
+            <button onclick="document.getElementById('crossRoomAlert').classList.add('hidden')" class="px-3 py-1.5 rounded-lg border bg-white">ยกเลิก</button>
+          </div>
+        </div>
+
+        <div id="scanFeedback" class="text-xs font-medium text-center py-2 rounded-xl bg-slate-100 text-slate-600">
+          พร้อมสแกน... (เมื่อสแกนแล้ว ระบบจะซิงค์คะแนนขึ้น Google Sheet อัตโนมัติ)
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 3: สร้างและพิมพ์บัตร/สติกเกอร์ QR Code ติดสมุด -->
+    <div id="qrPrintModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl max-w-5xl w-full p-5 space-y-4 max-h-[92vh] flex flex-col">
+        <div class="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
+          <div>
+            <h3 class="font-bold text-base text-slate-800">🖨️ สร้างและพิมพ์บัตร QR Code ประจำตัวนักเรียน (สำหรับติดสมุด / ใบงาน)</h3>
+            <p class="text-xs text-slate-500">สร้างจากรายชื่อแท็บ ป.6-1, ป.6-2, ป.6-3 อัตโนมัติ • ติดครั้งเดียวใช้สแกนได้ทั้ง 3 วิชา</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="triggerPrintQr()" class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5">
+              🖨️ สั่งพิมพ์ / บันทึก PDF (A4)
+            </button>
+            <button onclick="closeModal('qrPrintModal')" class="text-slate-400 hover:text-slate-600 px-2 text-lg">✕</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <label class="font-semibold block mb-1 text-slate-700">1. เลือกห้องเรียนที่จะพิมพ์</label>
+            <select id="qrRoomFilter" onchange="renderQrPreview()" class="w-full border rounded-lg px-2.5 py-1.5 bg-white font-medium">
+              <option value="current">เฉพาะห้องที่เปิดอยู่ปัจจุบัน</option>
+              <option value="ป.6-1">เฉพาะห้อง ป.6-1</option>
+              <option value="ป.6-2">เฉพาะห้อง ป.6-2</option>
+              <option value="ป.6-3">เฉพาะห้อง ป.6-3</option>
+              <option value="all">พิมพ์ครบทั้ง 3 ห้อง (แยกหน้าให้อัตโนมัติ)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-semibold block mb-1 text-slate-700">2. ขนาดสติกเกอร์บนหน้า A4</label>
+            <select id="qrCardSize" onchange="renderQrPreview()" class="w-full border rounded-lg px-2.5 py-1.5 bg-white font-medium">
+              <option value="md" selected>ขนาดกลาง: ติดหน้าปกสมุด (3 คอลัมน์ / 15 ดวงต่อหน้า)</option>
+              <option value="sm">ขนาดเล็ก: ติดมุมใบงาน (4 คอลัมน์ / 28 ดวงต่อหน้า)</option>
+              <option value="lg">ขนาดใหญ่: บัตรประจำตัว (2 คอลัมน์ / 8 ดวงต่อหน้า)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-semibold block mb-1 text-slate-700">3. ป้ายชื่อวิชาบนบัตร</label>
+            <select id="qrSubjectTag" onchange="renderQrPreview()" class="w-full border rounded-lg px-2.5 py-1.5 bg-white font-medium">
+              <option value="all">สังคม • ประวัติ • การงาน ป.6 (รวม 3 วิชา)</option>
+              <option value="soc">วิชาสังคมศึกษา ป.6</option>
+              <option value="his">วิชาประวัติศาสตร์ ป.6</option>
+              <option value="occ">วิชาการงานอาชีพ ป.6</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-semibold block mb-1 text-slate-700">4. ค้นหา/เลือกเฉพาะบางคน</label>
+            <input id="qrSearchStudent" type="text" oninput="renderQrPreview()" placeholder="เว้นว่าง = พิมพ์ทุกคนในห้อง" class="w-full border rounded-lg px-2.5 py-1.5 bg-white" />
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto bg-slate-100 p-4 rounded-xl border border-slate-200">
+          <div id="qrPreviewContainer" class="bg-white max-w-[210mm] mx-auto p-5 rounded-xl shadow-sm space-y-6"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- พื้นที่สำหรับสั่งพิมพ์ออกกระดาษ A4 เท่านั้น -->
+  <div id="printSheetArea" class="hidden"></div>
+
+  <script>
+    // ผูก URL ของ Google Apps Script Web App ถาวร
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz8HZH4JoQuOPKrDFKio-S3aA5WHj0jbAk6ZIFzfnaJfKqT846P2Bj1PpBuos8Sa1ak/exec';
+    const STORAGE_KEY = 'P6_SMARTSCORE_STATE_V4';
+    const ROOM_LIST = ['ป.6-1', 'ป.6-2', 'ป.6-3'];
+
+    let html5QrScanner = null;
+    let verticalHeader = false;
+    let tempTasks = [];
+    let tempSummaryCols = [];
+    let syncTimer = null;
+
+    const createDefaultUnit = () => ([
+      {
+        id: 'u1',
+        name: 'หน่วยที่ 1',
+        calcMode: 'all',
+        summaryCols: [
+          { id: 'sc1', name: 'คะแนนเก็บ (1)', max: 10 },
+          { id: 'sc2', name: 'ชิ้นงาน/ภาระงาน (2)', max: 10 }
+        ],
+        tasks: [
+          { id: 't1', name: 'ใบงานที่ 1.1 เรื่องพื้นฐาน', max: 10, targetCol: 1 },
+          { id: 't2', name: 'แบบฝึกหัดท้ายบทเรียน', max: 10, targetCol: 1 },
+          { id: 't3', name: 'ชิ้นงานสรุปองค์ความรู้', max: 20, targetCol: 2 }
+        ]
+      }
+    ]);
+
+    let state = {
+      currentSubject: 'soc',
+      currentRoom: 'ป.6-1',
+      currentUnitId: 'u1',
+      students: {
+        'ป.6-1': [
+          { no: 1, code: '6101', name: 'ด.ช.ธนกฤต รักเรียน' },
+          { no: 2, code: '6102', name: 'ด.ญ.กัญญาณี มีสุข' },
+          { no: 3, code: '6103', name: 'ด.ช.ณัฐพงศ์ ขยันยิ่ง' }
+        ],
+        'ป.6-2': [
+          { no: 1, code: '6201', name: 'ด.ช.ภาคิน ตั้งใจ' },
+          { no: 2, code: '6202', name: 'ด.ญ.พิมชนก สดใส' }
+        ],
+        'ป.6-3': [
+          { no: 1, code: '6301', name: 'ด.ช.วรเมธ เก่งกาจ' },
+          { no: 2, code: '6302', name: 'ด.ญ.ชลธิชา น่ารัก' }
+        ]
+      },
+      subjects: {
+        soc: { name: 'สังคมศึกษา ป.6', icon: '🌍', units: createDefaultUnit(), scores: {} },
+        his: { name: 'ประวัติศาสตร์ ป.6', icon: '🏛️', units: createDefaultUnit(), scores: {} },
+        occ: { name: 'การงานอาชีพ ป.6', icon: '🛠️', units: createDefaultUnit(), scores: {} }
+      }
+    };
+
+    // ฟังก์ชันอัปเดตแถบสถานะการซิงค์ DB บนหน้าจอ
+    function setSyncStatus(status, customMessage) {
+      const badge = document.getElementById('syncBadge');
+      const dot = document.getElementById('syncDot');
+      const spinner = document.getElementById('syncSpinner');
+      const text = document.getElementById('syncText');
+
+      const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      if (status === 'loading') {
+        badge.className = 'cursor-pointer select-none text-xs px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 flex items-center gap-2 font-medium';
+        dot.classList.add('hidden');
+        spinner.classList.remove('hidden');
+        text.textContent = customMessage || 'กำลังดึงข้อมูลจาก Sheet DB...';
+      } else if (status === 'syncing') {
+        badge.className = 'cursor-pointer select-none text-xs px-3 py-2 rounded-xl border border-sky-300 bg-sky-50 text-sky-800 flex items-center gap-2 font-medium';
+        dot.classList.add('hidden');
+        spinner.classList.remove('hidden');
+        text.textContent = customMessage || 'กำลังซิงค์ข้อมูลขึ้น DB...';
+      } else if (status === 'synced') {
+        badge.className = 'cursor-pointer select-none text-xs px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-medium';
+        spinner.classList.add('hidden');
+        dot.classList.remove('hidden');
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+        text.textContent = customMessage || `ซิงค์ DB ล่าสุด: ${timeStr}`;
+      } else if (status === 'error') {
+        badge.className = 'cursor-pointer select-none text-xs px-3 py-2 rounded-xl border border-rose-300 bg-rose-50 text-rose-800 flex items-center gap-2 font-medium';
+        spinner.classList.add('hidden');
+        dot.classList.remove('hidden');
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping';
+        text.textContent = customMessage || 'ซิงค์ไม่สำเร็จ (คลิกเพื่อลองใหม่)';
+      }
+    }
+
+    function normalizeState() {
+      if (state.students['ป.6/1'] && !state.students['ป.6-1']) {
+        state.students['ป.6-1'] = state.students['ป.6/1'];
+        state.students['ป.6-2'] = state.students['ป.6/2'] || [];
+        state.students['ป.6-3'] = state.students['ป.6/3'] || [];
+      }
+      if (!ROOM_LIST.includes(state.currentRoom)) {
+        state.currentRoom = 'ป.6-1';
+      }
+      ['soc', 'his', 'occ'].forEach(subKey => {
+        const sub = state.subjects[subKey];
+        if (!sub) return;
+        sub.units.forEach(u => {
+          if (!Array.isArray(u.summaryCols) || u.summaryCols.length === 0) {
+            u.summaryCols = [
+              { id: 'sc1', name: u.col1Name || 'คะแนนสรุป (1)', max: Number(u.col1Max || 10) },
+              { id: 'sc2', name: u.col2Name || 'คะแนนสรุป (2)', max: Number(u.col2Max || 10) }
+            ];
+          }
+        });
+      });
+    }
+
+    function init() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { state = JSON.parse(saved); } catch (e) {}
+      }
+      normalizeState();
+      renderAll();
+      // ดึงข้อมูลและรายชื่อล่าสุดจาก Google Sheet อัตโนมัติทันทีที่เปิดหน้าเว็บ
+      loadFromSheet(true);
+    }
+
+    function saveLocal(autoSync = true) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (autoSync) {
+        setSyncStatus('syncing', 'รอซิงค์ข้อมูล...');
+        if (syncTimer) clearTimeout(syncTimer);
+        syncTimer = setTimeout(() => {
+          syncToSheet(true);
+        }, 500);
+      }
+    }
+
+    function getActiveSub() { return state.subjects[state.currentSubject]; }
+    function getActiveUnit() {
+      const sub = getActiveSub();
+      return sub.units.find(u => u.id === state.currentUnitId) || sub.units[0];
+    }
+
+    function calcUnitSummary(sub, room, stuCode, unit) {
+      let rawAll = 0, maxAll = 0;
+      const groupRaw = {};
+      const groupMax = {};
+
+      unit.tasks.forEach(t => {
+        const key = `${room}_${stuCode}_${unit.id}_${t.id}`;
+        const v = sub.scores[key] !== undefined && sub.scores[key] !== '' ? Math.round(Number(sub.scores[key])) : 0;
+        const m = Number(t.max || 0);
+        rawAll += v;
+        maxAll += m;
+        const target = Number(t.targetCol || 1);
+        groupRaw[target] = (groupRaw[target] || 0) + v;
+        groupMax[target] = (groupMax[target] || 0) + m;
+      });
+
+      const summaryValues = unit.summaryCols.map((sc, idx) => {
+        const colIdx = idx + 1;
+        if (unit.calcMode === 'split') {
+          const gMax = groupMax[colIdx] || 0;
+          const gRaw = groupRaw[colIdx] || 0;
+          return gMax > 0 ? Math.round((gRaw / gMax) * sc.max) : 0;
+        }
+        return maxAll > 0 ? Math.round((rawAll / maxAll) * sc.max) : 0;
+      });
+
+      const total = summaryValues.reduce((a, b) => a + b, 0);
+      const maxTotal = unit.summaryCols.reduce((a, b) => a + Number(b.max || 0), 0);
+      return { summaryValues, total, maxTotal };
+    }
+
+    function renderAll() {
+      ['soc', 'his', 'occ'].forEach(id => {
+        const s = state.subjects[id];
+        const active = state.currentSubject === id;
+        const el = document.getElementById('sub_' + id);
+        el.className = `p-4 rounded-2xl border-2 text-left transition flex items-center justify-between ${
+          active ? 'border-indigo-600 bg-indigo-50/70 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+        }`;
+        el.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${s.icon}</span>
+            <div>
+              <div class="font-bold text-sm text-slate-800">${s.name}</div>
+              <div class="text-xs text-slate-500">ใช้รายชื่อกลาง 3 ห้อง • ${s.units.length} หน่วย</div>
+            </div>
+          </div>
+          ${active ? '<span class="text-xs px-2 py-0.5 rounded-full bg-indigo-600 text-white">กำลังเปิด</span>' : ''}
+        `;
+      });
+
+      ROOM_LIST.forEach((r, idx) => {
+        const btn = document.getElementById('room_' + (idx + 1));
+        const active = state.currentRoom === r;
+        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition ${
+          active ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+        }`;
+        btn.textContent = `${r} (${(state.students[r] || []).length} คน)`;
+      });
+
+      const sub = getActiveSub();
+      const uSel = document.getElementById('unitSelect');
+      uSel.innerHTML = sub.units.map(u => `<option value="${u.id}" ${u.id === state.currentUnitId ? 'selected' : ''}>${u.name} (งานดิบ ${u.tasks.length} ช่อง / สรุป ${u.summaryCols.length} ช่อง)</option>`).join('');
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const sub = getActiveSub();
+      const unit = getActiveUnit();
+      const students = (state.students[state.currentRoom] || []).slice().sort((a, b) => a.no - b.no);
+
+      const thClass = verticalHeader ? 'th-vertical' : 'th-wrap';
+      const unitMaxTotal = unit.summaryCols.reduce((a, b) => a + Number(b.max || 0), 0);
+
+      const headHtml = `
+        <tr>
+          <th class="p-2.5 text-center w-12">เลขที่</th>
+          <th class="p-2.5 text-center w-20">รหัส</th>
+          <th class="p-2.5 text-left min-w-[160px]">ชื่อ-นามสกุล</th>
+          ${unit.tasks.map(t => `
+            <th class="p-2 text-center bg-slate-700 border-l border-slate-600 align-bottom">
+              <div class="${thClass} mx-auto font-medium text-[11px] leading-tight">${t.name}</div>
+              <div class="text-[10px] text-amber-300 mt-1">(${t.max})</div>
+            </th>
+          `).join('')}
+          ${unit.summaryCols.map(sc => `
+            <th class="p-2 text-center bg-indigo-700 border-l border-indigo-500 th-wrap align-bottom">
+              <div class="text-[11px] leading-tight">${sc.name}</div>
+              <div class="text-[10px] text-indigo-200 mt-1">(${sc.max})</div>
+            </th>
+          `).join('')}
+          <th class="p-2 text-center bg-emerald-700 border-l border-emerald-500 w-20 align-bottom">
+            <div>รวมหน่วย</div>
+            <div class="text-[10px] text-emerald-200 mt-1">(${unitMaxTotal})</div>
+          </th>
+        </tr>
+      `;
+      document.getElementById('gradeTableHead').innerHTML = headHtml;
+
+      const bodyHtml = students.map(stu => {
+        const sum = calcUnitSummary(sub, state.currentRoom, stu.code, unit);
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="p-2 text-center font-semibold">${stu.no}</td>
+            <td class="p-2 text-center font-mono text-slate-500">${stu.code}</td>
+            <td class="p-2 font-medium text-slate-800">${stu.name}</td>
+            ${unit.tasks.map(t => {
+              const key = `${state.currentRoom}_${stu.code}_${unit.id}_${t.id}`;
+              const val = sub.scores[key] !== undefined && sub.scores[key] !== '' ? Math.round(Number(sub.scores[key])) : '';
+              return `
+                <td class="p-1.5 text-center border-l border-slate-100">
+                  <input type="number" step="1" min="0" max="${t.max}" value="${val}"
+                    onchange="updateScore('${state.currentRoom}','${stu.code}','${unit.id}','${t.id}', this.value, ${t.max})"
+                    class="w-14 text-center border border-slate-300 rounded-lg py-1 font-semibold focus:border-indigo-600 focus:outline-none" />
+                </td>
+              `;
+            }).join('')}
+            ${sum.summaryValues.map(v => `
+              <td class="p-2 text-center font-bold text-indigo-700 bg-indigo-50/60 border-l">${v}</td>
+            `).join('')}
+            <td class="p-2 text-center font-bold text-emerald-700 bg-emerald-50/70 border-l">${sum.total}</td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('gradeTableBody').innerHTML = bodyHtml;
+    }
+
+    function updateScore(room, stuCode, unitId, taskId, rawVal, maxScore) {
+      const sub = getActiveSub();
+      const key = `${room}_${stuCode}_${unitId}_${taskId}`;
+      if (rawVal === '') {
+        delete sub.scores[key];
+      } else {
+        let intVal = Math.round(Number(rawVal));
+        if (intVal < 0) intVal = 0;
+        if (intVal > maxScore) intVal = maxScore;
+        sub.scores[key] = intVal;
+      }
+      saveLocal(true);
+      renderTable();
+    }
+
+    function selectSubject(id) {
+      state.currentSubject = id;
+      state.currentUnitId = getActiveSub().units[0].id;
+      renderAll();
+    }
+    function selectRoom(r) { state.currentRoom = r; renderAll(); }
+    function selectUnit(uId) { state.currentUnitId = uId; renderAll(); }
+
+    function toggleHeaderStyle() {
+      verticalHeader = !verticalHeader;
+      document.getElementById('headerStyleBtn').textContent = verticalHeader
+        ? '📐 หัวตาราง: แนวตั้ง (สไตล์ ปพ.5)'
+        : '📐 หัวตาราง: ตัดบรรทัดพอดีช่องแคบ';
+      renderTable();
+    }
+
+    function addNewUnit() {
+      const name = prompt('ตั้งชื่อหน่วยการเรียนรู้ใหม่:', `หน่วยที่ ${getActiveSub().units.length + 1}`);
+      if (!name) return;
+      const newId = 'u' + Date.now();
+      getActiveSub().units.push({
+        id: newId,
+        name,
+        calcMode: 'all',
+        summaryCols: [
+          { id: 'sc1_' + Date.now(), name: 'คะแนนสรุป (1)', max: 10 },
+          { id: 'sc2_' + Date.now(), name: 'คะแนนสรุป (2)', max: 10 }
+        ],
+        tasks: [
+          { id: 't1_' + Date.now(), name: 'ชิ้นงานที่ 1', max: 10, targetCol: 1 },
+          { id: 't2_' + Date.now(), name: 'ชิ้นงานที่ 2', max: 10, targetCol: 1 }
+        ]
+      });
+      state.currentUnitId = newId;
+      saveLocal(true);
+      renderAll();
+    }
+
+    // ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนดิบ/สรุป
+    function openUnitConfigModal() {
+      const u = getActiveUnit();
+      document.getElementById('cfgUnitName').value = u.name;
+      document.getElementById('cfgCalcMode').value = u.calcMode || 'all';
+      tempSummaryCols = JSON.parse(JSON.stringify(u.summaryCols));
+      tempTasks = JSON.parse(JSON.stringify(u.tasks));
+
+      document.getElementById('cfgSummaryCountInput').value = tempSummaryCols.length;
+      document.getElementById('cfgTaskCountInput').value = tempTasks.length;
+
+      renderSummaryColConfigList();
+      renderTaskConfigList();
+      openModal('unitConfigModal');
+    }
+
+    function applySummaryCount() {
+      let target = Math.round(Number(document.getElementById('cfgSummaryCountInput').value) || 1);
+      if (target < 1) target = 1;
+      if (target > 10) target = 10;
+      document.getElementById('cfgSummaryCountInput').value = target;
+
+      while (tempSummaryCols.length < target) {
+        const idx = tempSummaryCols.length + 1;
+        tempSummaryCols.push({ id: 'sc' + Date.now() + '_' + idx, name: `คะแนนสรุป (${idx})`, max: 10 });
+      }
+      if (tempSummaryCols.length > target) {
+        tempSummaryCols = tempSummaryCols.slice(0, target);
+      }
+      renderSummaryColConfigList();
+      renderTaskConfigList();
+    }
+
+    function applyTaskCount() {
+      let target = Math.round(Number(document.getElementById('cfgTaskCountInput').value) || 1);
+      if (target < 1) target = 1;
+      if (target > 30) target = 30;
+      document.getElementById('cfgTaskCountInput').value = target;
+
+      while (tempTasks.length < target) {
+        const idx = tempTasks.length + 1;
+        tempTasks.push({ id: 't' + Date.now() + '_' + idx, name: `ชิ้นงานที่ ${idx}`, max: 10, targetCol: 1 });
+      }
+      if (tempTasks.length > target) {
+        tempTasks = tempTasks.slice(0, target);
+      }
+      renderTaskConfigList();
+    }
+
+    function renderSummaryColConfigList() {
+      document.getElementById('cfgSummaryCountInput').value = tempSummaryCols.length;
+      const container = document.getElementById('cfgSummaryColList');
+      container.innerHTML = tempSummaryCols.map((sc, i) => `
+        <div class="bg-white p-2.5 rounded-xl border border-indigo-200 flex items-center gap-2">
+          <span class="px-2 py-1 rounded-lg bg-indigo-100 text-indigo-800 font-bold text-[11px]">ช่องสรุป ${i + 1}</span>
+          <input type="text" value="${sc.name}" onchange="tempSummaryCols[${i}].name=this.value;renderTaskConfigList()" class="flex-1 border rounded-lg px-2 py-1" placeholder="ชื่อช่องสรุป" />
+          <input type="number" value="${sc.max}" onchange="tempSummaryCols[${i}].max=Math.round(Number(this.value)||10)" class="w-16 border rounded-lg px-2 py-1 text-center font-semibold" title="คะแนนเต็ม" />
+          ${tempSummaryCols.length > 1 ? `<button onclick="tempSummaryCols.splice(${i},1);renderSummaryColConfigList();renderTaskConfigList()" class="text-rose-500 font-bold px-1">✕</button>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderTaskConfigList() {
+      document.getElementById('cfgTaskCountInput').value = tempTasks.length;
+      const mode = document.getElementById('cfgCalcMode').value;
+      const container = document.getElementById('cfgTaskList');
+      container.innerHTML = tempTasks.map((t, i) => `
+        <div class="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200">
+          <span class="text-slate-400 font-semibold w-7 text-center">#${i + 1}</span>
+          <input type="text" value="${t.name}" onchange="tempTasks[${i}].name=this.value" class="flex-1 border rounded-lg px-2.5 py-1" placeholder="ชื่อชิ้นงาน/ใบงาน" />
+          <span class="text-slate-400 text-[11px]">เต็ม:</span>
+          <input type="number" value="${t.max}" onchange="tempTasks[${i}].max=Math.round(Number(this.value)||10)" class="w-16 border rounded-lg px-2 py-1 text-center font-semibold" />
+          ${mode === 'split' ? `
+            <select onchange="tempTasks[${i}].targetCol=Number(this.value)" class="border rounded-lg px-2 py-1 bg-indigo-50 text-indigo-900 font-medium">
+              ${tempSummaryCols.map((sc, sIdx) => `
+                <option value="${sIdx + 1}" ${(Number(t.targetCol || 1) === (sIdx + 1)) ? 'selected' : ''}>เข้า: ${sc.name}</option>
+              `).join('')}
+            </select>
+          ` : ''}
+          ${tempTasks.length > 1 ? `<button onclick="tempTasks.splice(${i},1);renderTaskConfigList()" class="text-rose-500 px-2 font-bold">✕</button>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function addTaskInModal() {
+      tempTasks.push({ id: 't' + Date.now(), name: `ชิ้นงานที่ ${tempTasks.length + 1}`, max: 10, targetCol: 1 });
+      renderTaskConfigList();
+    }
+
+    function saveUnitConfig() {
+      const u = getActiveUnit();
+      u.name = document.getElementById('cfgUnitName').value.trim() || u.name;
+      u.calcMode = document.getElementById('cfgCalcMode').value;
+      u.summaryCols = tempSummaryCols;
+      u.tasks = tempTasks;
+      saveLocal(true);
+      closeModal('unitConfigModal');
+      renderAll();
+    }
+
+    // ==========================================
+    // ระบบสร้างและพิมพ์บัตร QR Code ประจำตัวนักเรียน
+    // ==========================================
+    function openQrPrintModal() {
+      document.getElementById('qrRoomFilter').value = state.currentRoom;
+      document.getElementById('qrSearchStudent').value = '';
+      openModal('qrPrintModal');
+      renderQrPreview();
+    }
+
+    function createQrDataUrl(text, sizePx) {
+      try {
+        const qr = new QRious({
+          value: text,
+          size: sizePx || 140,
+          level: 'M'
+        });
+        return qr.toDataURL('image/png');
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function getSubjectLabelForQr(tagValue) {
+      if (tagValue === 'soc') return '🌍 วิชาสังคมศึกษา ป.6';
+      if (tagValue === 'his') return '🏛️ วิชาประวัติศาสตร์ ป.6';
+      if (tagValue === 'occ') return '🛠️ วิชาการงานอาชีพ ป.6';
+      return '📚 สังคม • ประวัติ • การงาน ป.6';
+    }
+
+    function buildQrSheetsHtml() {
+      const roomFilter = document.getElementById('qrRoomFilter').value;
+      const cardSize = document.getElementById('qrCardSize').value;
+      const subjectTag = document.getElementById('qrSubjectTag').value;
+      const keyword = (document.getElementById('qrSearchStudent').value || '').trim().toLowerCase();
+
+      const roomsToRender = roomFilter === 'all'
+        ? ROOM_LIST
+        : [roomFilter === 'current' ? state.currentRoom : roomFilter];
+
+      const subjectLabel = getSubjectLabelForQr(subjectTag);
+
+      let gridClass = 'grid-cols-3 gap-3';
+      let qrPixel = 115;
+      if (cardSize === 'sm') {
+        gridClass = 'grid-cols-4 gap-2';
+        qrPixel = 84;
+      } else if (cardSize === 'lg') {
+        gridClass = 'grid-cols-2 gap-4';
+        qrPixel = 145;
+      }
+
+      const sectionsHtml = roomsToRender.map((roomName, roomIdx) => {
+        const list = (state.students[roomName] || [])
+          .slice()
+          .sort((a, b) => a.no - b.no)
+          .filter(s => {
+            if (!keyword) return true;
+            return String(s.no).includes(keyword) ||
+                   String(s.code).toLowerCase().includes(keyword) ||
+                   String(s.name).toLowerCase().includes(keyword);
+          });
+
+        const cardsHtml = list.map(stu => {
+          const qrPayload = `${roomName}|${stu.code}`;
+          const qrImg = createQrDataUrl(qrPayload, qrPixel);
+
+          if (cardSize === 'sm') {
+            return `
+              <div class="qr-card-item border border-dashed border-slate-400 rounded-xl p-2 flex flex-col items-center text-center bg-white">
+                <div class="w-full flex justify-between items-center text-[10px] font-bold text-slate-700 px-1 mb-1">
+                  <span class="bg-slate-800 text-white px-1.5 py-0.2 rounded">${roomName}</span>
+                  <span>เลขที่ ${stu.no}</span>
+                </div>
+                <img src="${qrImg}" alt="QR" class="w-16 h-16 my-0.5" />
+                <div class="font-bold text-[11px] text-slate-900 leading-tight line-clamp-1 mt-0.5">${stu.name}</div>
+                <div class="text-[9px] text-slate-500 font-mono">รหัส: ${stu.code}</div>
+              </div>
+            `;
+          }
+
+          if (cardSize === 'lg') {
+            return `
+              <div class="qr-card-item border-2 border-dashed border-slate-400 rounded-2xl p-3.5 flex items-center gap-3.5 bg-white">
+                <img src="${qrImg}" alt="QR" class="w-28 h-28 border border-slate-200 rounded-xl p-1 shrink-0" />
+                <div class="flex-1 min-w-0 space-y-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-bold text-xs">${roomName}</span>
+                    <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-800 font-bold text-xs">เลขที่ ${stu.no}</span>
+                  </div>
+                  <div class="font-bold text-sm text-slate-900 truncate">${stu.name}</div>
+                  <div class="text-xs text-slate-500 font-mono">รหัสประจำตัว: <b>${stu.code}</b></div>
+                  <div class="text-[11px] text-indigo-700 font-medium pt-0.5 border-t border-slate-100">${subjectLabel}</div>
+                </div>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="qr-card-item border border-dashed border-slate-400 rounded-xl p-2.5 flex flex-col items-center text-center bg-white">
+              <div class="w-full flex justify-between items-center text-[11px] font-bold mb-1">
+                <span class="px-2 py-0.5 rounded-md bg-indigo-600 text-white">${roomName}</span>
+                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800">เลขที่ ${stu.no}</span>
+              </div>
+              <img src="${qrImg}" alt="QR" class="w-24 h-24 my-1 border border-slate-100 rounded-lg p-0.5" />
+              <div class="font-bold text-xs text-slate-900 leading-snug line-clamp-1">${stu.name}</div>
+              <div class="text-[10px] text-slate-500 font-mono">รหัส: ${stu.code}</div>
+              <div class="mt-1 w-full text-[10px] text-indigo-700 bg-indigo-50 rounded py-0.5 font-medium truncate px-1">${subjectLabel}</div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="${roomIdx > 0 ? 'room-page-break pt-4' : ''}">
+            <div class="flex items-center justify-between border-b border-slate-300 pb-2 mb-3">
+              <div class="font-bold text-sm text-slate-800">ป้าย QR Code ประจำตัวนักเรียน ห้อง ${roomName} (${list.length} คน)</div>
+              <div class="text-xs text-slate-500">${subjectLabel} • ตัดตามเส้นประเพื่อติดสมุด/ใบงาน</div>
+            </div>
+            <div class="grid ${gridClass}">
+              ${cardsHtml || '<div class="col-span-full text-center py-6 text-slate-400 text-xs">ไม่พบรายชื่อนักเรียนในห้องนี้</div>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return sectionsHtml;
+    }
+
+    function renderQrPreview() {
+      const html = buildQrSheetsHtml();
+      document.getElementById('qrPreviewContainer').innerHTML = html;
+    }
+
+    function triggerPrintQr() {
+      const html = buildQrSheetsHtml();
+      const printArea = document.getElementById('printSheetArea');
+      printArea.innerHTML = html;
+      window.print();
+    }
+
+    // ==========================================
+    // ระบบสแกน QR + เช็กสแกนผิดห้อง
+    // ==========================================
+    function openScanModal() {
+      const u = getActiveUnit();
+      const sel = document.getElementById('scanTaskSelect');
+      sel.innerHTML = u.tasks.map(t => `<option value="${t.id}" data-max="${t.max}">${t.name} (เต็ม ${t.max})</option>`).join('');
+      if (u.tasks[0]) document.getElementById('scanDefaultScore').value = u.tasks[0].max;
+      sel.onchange = () => {
+        const opt = sel.options[sel.selectedIndex];
+        document.getElementById('scanDefaultScore').value = opt.getAttribute('data-max');
+      };
+
+      document.getElementById('crossRoomAlert').classList.add('hidden');
+      openModal('scanModal');
+
+      try {
+        html5QrScanner = new Html5Qrcode("qrReader");
+        html5QrScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => { handleScanCode(decodedText); },
+          () => {}
+        ).catch(() => {});
+      } catch (e) {}
+    }
+
+    function closeScanModal() {
+      if (html5QrScanner) {
+        html5QrScanner.stop().catch(() => {});
+        html5QrScanner = null;
+      }
+      closeModal('scanModal');
+    }
+
+    function findStudentAcrossRooms(rawInput) {
+      const clean = String(rawInput || '').trim();
+      if (!clean) return null;
+
+      if (clean.includes('|')) {
+        const parts = clean.split('|');
+        const qrRoom = parts[0].trim();
+        const qrCode = parts[1].trim();
+        if (state.students[qrRoom]) {
+          const foundInRoom = state.students[qrRoom].find(s => String(s.code) === qrCode);
+          if (foundInRoom) return { room: qrRoom, student: foundInRoom };
+        }
+      }
+
+      for (const r of ROOM_LIST) {
+        const found = (state.students[r] || []).find(s => String(s.code) === clean);
+        if (found) return { room: r, student: found };
+      }
+      return null;
+    }
+
+    function handleScanCode(rawCode) {
+      const code = String(rawCode || '').trim();
+      if (!code) return;
+      const found = findStudentAcrossRooms(code);
+      const fb = document.getElementById('scanFeedback');
+      const alertBox = document.getElementById('crossRoomAlert');
+      alertBox.classList.add('hidden');
+
+      if (!found) {
+        fb.className = 'text-xs font-semibold text-center py-2 rounded-xl bg-rose-100 text-rose-700';
+        fb.textContent = `❌ ไม่พบรหัสนักเรียน "${code}" ในแท็บ ป.6-1 ถึง ป.6-3`;
+        return;
+      }
+
+      const taskId = document.getElementById('scanTaskSelect').value;
+      const unit = getActiveUnit();
+      const task = unit.tasks.find(t => t.id === taskId);
+      const score = Math.min(task.max, Math.max(0, Math.round(Number(document.getElementById('scanDefaultScore').value) || 0)));
+
+      if (found.room !== state.currentRoom) {
+        const mode = document.getElementById('crossRoomMode').value;
+        if (mode === 'block') {
+          fb.className = 'text-xs font-semibold text-center py-2 rounded-xl bg-rose-100 text-rose-700';
+          fb.textContent = `🚫 บล็อกการลงคะแนน: ${found.student.name} อยู่ห้อง ${found.room}`;
+          return;
+        }
+        if (mode === 'auto') {
+          updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
+          fb.className = 'text-xs font-semibold text-center py-2 rounded-xl bg-emerald-100 text-emerald-700';
+          fb.textContent = `⚡ บันทึกข้ามห้องอัตโนมัติ: ${found.student.name} (${found.room}) ได้ ${score} คะแนน`;
+          return;
+        }
+
+        document.getElementById('crossRoomMsg').textContent =
+          `⚠️ สแกนพบนักเรียนคนละห้อง! "${found.student.name}" อยู่ห้อง ${found.room} (หน้าจอปัจจุบันคือ ${state.currentRoom}) ต้องการบันทึก ${score} คะแนนหรือไม่?`;
+        alertBox.classList.remove('hidden');
+
+        document.getElementById('btnCrossSaveKeep').onclick = () => {
+          updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
+          alertBox.classList.add('hidden');
+          fb.className = 'text-xs font-semibold text-center py-2 rounded-xl bg-emerald-100 text-emerald-700';
+          fb.textContent = `✅ บันทึกลงห้อง ${found.room} ให้ ${found.student.name} (${score} คะแนน) เรียบร้อย`;
+        };
+        document.getElementById('btnCrossSwitchRoom').onclick = () => {
+          state.currentRoom = found.room;
+          updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
+          alertBox.classList.add('hidden');
+          renderAll();
+          fb.className = 'text-xs font-semibold text-center py-2 rounded-xl bg-indigo-100 text-indigo-700';
+          fb.textContent = `🔄 สลับไปห้อง ${found.room} และบันทึก ${score} คะแนนให้ ${found.student.name} แล้ว`;
+        };
+        return;
+      }
+
+      updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
+      fb.className = 'text-xs font-semibold text-center py-2 rounded-xl bg-emerald-100 text-emerald-700';
+      fb.textContent = `✅ บันทึก ${score} คะแนน ให้ ${found.student.name} (${found.room}) เรียบร้อย`;
+      document.getElementById('manualScanInput').value = '';
+    }
+
+    // ==========================================
+    // ระบบซิงค์และดึงข้อมูลจาก Google Sheet DB (ผูก URL ถาวร)
+    // ==========================================
+    async function syncToSheet() {
+      setSyncStatus('syncing', 'กำลังซิงค์ข้อมูลขึ้น DB...');
+      try {
+        await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'save', payload: state })
+        });
+        setSyncStatus('synced');
+      } catch (e) {
+        setSyncStatus('error', 'ซิงค์ไม่สำเร็จ (คลิกเพื่อลองใหม่)');
+      }
+    }
+
+    async function loadFromSheet(silent = false) {
+      setSyncStatus('loading', 'กำลังดึงข้อมูลจาก Sheet DB...');
+      try {
+        const res = await fetch(GAS_WEB_APP_URL + '?action=load');
+        const json = await res.json();
+        if (json && json.status === 'ok') {
+          if (json.data) state = json.data;
+          if (json.students) state.students = json.students;
+          normalizeState();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          renderAll();
+          setSyncStatus('synced');
+          if (!silent) {
+            const countAll = ROOM_LIST.reduce((acc, r) => acc + (state.students[r] ? state.students[r].length : 0), 0);
+            alert(`อัปเดตข้อมูลและรายชื่อนักเรียนทั้ง 3 ห้อง (${countAll} คน) จาก Google Sheet สำเร็จ!`);
+          }
+        } else {
+          // กรณี Sheet เพิ่งสร้างใหม่และยังไม่มีข้อมูลใน _SMART_DB ให้ส่งโครงสร้างเริ่มต้นขึ้นไปสร้างแท็บทันที
+          await syncToSheet();
+        }
+      } catch (err) {
+        setSyncStatus('error', 'ดึงข้อมูล DB ไม่สำเร็จ (คลิกเพื่อซิงค์)');
+        if (!silent) {
+          alert('ไม่สามารถดึงข้อมูลจาก Google Sheet ได้ กรุณาตรวจสอบว่าตั้งค่าสิทธิ์ Web App (Who has access) เป็น Anyone (ทุกคน) แล้ว');
+        }
+      }
+    }
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
