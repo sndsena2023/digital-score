@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="P.6 SmartScore" />
-  <link id="pwaManifestLink" rel="manifest" href="" />
-  <title>P.6 SmartScore ⚡ ระบบบันทึกคะแนนชั้น ป.6 (Supabase Realtime)</title>
+  <link id="pwaManifestLink" rel="manifest" href="manifest.json" />
+  <title>P.6 SmartScore ⚡ ระบบบันทึกคะแนนและตัดเกรดชั้น ป.6</title>
 
   <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -129,7 +129,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <h1 class="font-bold text-lg text-slate-900 tracking-tight">P.6 SmartScore</h1>
               <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
-                ⚡ Real-time • จำนวนเต็ม • PWA
+                ⚡ Real-time • ตัดเกรดอัตโนมัติ • PWA
               </span>
             </div>
             <p class="text-xs text-slate-500">
@@ -140,7 +140,7 @@
 
         <!-- Status Badge & Action Buttons -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- ป้ายสถานะการซิงค์ Supabase Real-time อัตโนมัติ (คลิกเพื่อซิงค์ซ้ำหรือดู SQL ได้) -->
+          <!-- ป้ายสถานะการซิงค์ Supabase Real-time -->
           <div onclick="handleSyncBadgeClick()" id="syncBadge" title="คลิกเพื่อซิงค์ข้อมูลกับ Supabase ทันที"
             class="cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-semibold transition hover:scale-[1.02]">
             <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -155,6 +155,13 @@
             <span>ติดตั้งแอป</span>
           </button>
 
+          <!-- ปุ่มส่งออก Excel (.csv) -->
+          <button onclick="openExportModal()"
+            class="text-xs px-3.5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm flex items-center gap-1.5 transition active:scale-95">
+            <span>📊</span>
+            <span>ส่งออก Excel (.csv)</span>
+          </button>
+
           <!-- ปุ่มพิมพ์สติกเกอร์ QR -->
           <button onclick="openQrPrintModal()"
             class="text-xs px-3.5 py-2 rounded-2xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-medium shadow-sm flex items-center gap-1.5 transition active:scale-95">
@@ -162,7 +169,7 @@
             <span>พิมพ์สติกเกอร์ QR</span>
           </button>
 
-          <!-- ปุ่มสแกน QR ลงคะแนน (สแกนก่อน -> เลือกงาน -> ใส่คะแนน -> กดบันทึก) -->
+          <!-- ปุ่มสแกน QR ลงคะแนน -->
           <button onclick="openScanModal()"
             class="text-xs px-4 py-2 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-semibold shadow-sm flex items-center gap-1.5 transition active:scale-95">
             <span>📷</span>
@@ -198,44 +205,84 @@
         <button onclick="selectSubject('occ')" id="sub_occ" class="p-4 rounded-3xl text-left transition-all duration-200 flex items-center justify-between"></button>
       </div>
 
-      <!-- 2. แถบเลือกห้องเรียน นำเข้ารายชื่อ หน่วยการเรียนรู้ และตั้งค่าช่องคะแนน -->
-      <div class="bento-card p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- สลับห้องเรียน ป.6-1, ป.6-2, ป.6-3 -->
-          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
-            <button onclick="selectRoom('ป.6-1')" id="room_1" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
-            <button onclick="selectRoom('ป.6-2')" id="room_2" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
-            <button onclick="selectRoom('ป.6-3')" id="room_3" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
+      <!-- 2. แถบสลับโหมด: [บันทึกคะแนนรายหน่วย] vs [สรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ] -->
+      <div class="bento-card p-4 rounded-3xl space-y-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
+          <!-- สลับมุมมองตาราง -->
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            <button onclick="setViewMode('unit')" id="viewBtn_unit"
+              class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+              <span>📝</span>
+              <span>บันทึกคะแนนรายหน่วย</span>
+            </button>
+            <button onclick="setViewMode('summary')" id="viewBtn_summary"
+              class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+              <span>🏆</span>
+              <span>สรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ</span>
+            </button>
           </div>
 
-          <button onclick="openStudentManagerModal()" class="text-xs px-3.5 py-2 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-semibold shadow-sm transition flex items-center gap-1">
-            <span>📥</span>
-            <span>นำเข้า / จัดการรายชื่อ 3 ห้อง</span>
-          </button>
+          <!-- สลับห้องเรียน ป.6-1, ป.6-2, ป.6-3 & ปุ่มจัดการรายชื่อ -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+              <button onclick="selectRoom('ป.6-1')" id="room_1" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
+              <button onclick="selectRoom('ป.6-2')" id="room_2" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
+              <button onclick="selectRoom('ป.6-3')" id="room_3" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
+            </div>
 
-          <div class="h-5 w-[1.5px] bg-slate-200 mx-1 hidden sm:block"></div>
-
-          <!-- เลือกหน่วยการเรียนรู้ -->
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs font-semibold text-slate-500">หน่วย:</span>
-            <select id="unitSelect" onchange="selectUnit(this.value)" class="text-xs border border-slate-300 rounded-2xl px-3.5 py-2 bg-white font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"></select>
-            <button onclick="addNewUnit()" class="text-xs px-3 py-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold border border-indigo-200 transition">
-              + เพิ่มหน่วย
+            <button onclick="openStudentManagerModal()" class="text-xs px-3.5 py-2 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-semibold shadow-sm transition flex items-center gap-1">
+              <span>📥</span>
+              <span>นำเข้า / จัดการรายชื่อ 3 ห้อง</span>
             </button>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <button onclick="toggleHeaderStyle()" id="headerStyleBtn" class="text-xs px-3.5 py-2 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium transition">
-            📐 หัวตาราง: ตัดบรรทัดพอดีช่องแคบ
-          </button>
-          <button onclick="openUnitConfigModal()" class="text-xs px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold border border-slate-900 cool-pill-shadow transition active:translate-y-0.5">
-            ⚙️ ตั้งค่าจำนวนช่องคะแนนดิบ & เฉลี่ย
-          </button>
+        <!-- แถบเครื่องมือย่อยสำหรับโหมด "บันทึกคะแนนรายหน่วย" -->
+        <div id="unitToolbarRow" class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500">เลือกหน่วยการเรียนรู้:</span>
+            <select id="unitSelect" onchange="selectUnit(this.value)" class="text-xs border border-slate-300 rounded-2xl px-3.5 py-2 bg-white font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"></select>
+            <button onclick="addNewUnit()" class="text-xs px-3 py-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold border border-indigo-200 transition">
+              + เพิ่มหน่วยใหม่
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="toggleHeaderStyle()" id="headerStyleBtn" class="text-xs px-3.5 py-2 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium transition">
+              📐 หัวตาราง: ตัดบรรทัดพอดีช่องแคบ
+            </button>
+            <button onclick="openUnitConfigModal()" class="text-xs px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold border border-slate-900 cool-pill-shadow transition active:translate-y-0.5">
+              ⚙️ ตั้งค่าจำนวนช่องคะแนนดิบ & เฉลี่ย
+            </button>
+          </div>
+        </div>
+
+        <!-- แถบเครื่องมือย่อยสำหรับโหมด "สรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ" -->
+        <div id="summaryToolbarRow" class="hidden flex-wrap items-center justify-between gap-3 pt-1">
+          <div class="flex flex-wrap items-center gap-3 text-xs">
+            <div class="flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-2xl border border-indigo-200">
+              <span class="font-bold text-indigo-950">คะแนนเต็มสอบปลายภาค/กลางภาค:</span>
+              <input id="examMaxInput" type="number" min="0" max="100" onchange="updateExamMax(this.value)"
+                class="w-16 text-center font-bold border border-indigo-300 rounded-xl py-1 bg-white text-indigo-900" />
+              <span class="text-[11px] text-indigo-600">(ใส่ 0 หากไม่มีสอบแยก)</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-2xl border border-slate-200">
+              <span class="font-bold text-slate-700">วิธีคิดเกรด:</span>
+              <select id="gradeCalcBasisSelect" onchange="updateGradeCalcBasis(this.value)"
+                class="bg-white border border-slate-300 rounded-xl px-2.5 py-1 font-semibold text-slate-800">
+                <option value="percent">คำนวณเป็นร้อยละ (%) อัตโนมัติ (แนะนำ)</option>
+                <option value="raw">ตัดจากคะแนนรวมสุทธิโดยตรง (เต็ม 100)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- แถบสรุปสถิติจำนวนนักเรียนแต่ละเกรด -->
+          <div id="gradeDistributionPills" class="flex flex-wrap items-center gap-1.5 text-[11px]"></div>
         </div>
       </div>
 
-      <!-- 3. ตารางบันทึกคะแนน -->
+      <!-- 3. ตารางแสดงผล (สลับระหว่างตารางรายหน่วย และ ตารางสรุปทุกหน่วย+ตัดเกรด) -->
       <div class="bento-card rounded-3xl overflow-hidden">
         <div class="px-5 py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-2">
@@ -243,9 +290,10 @@
             <span id="tableBannerTitle" class="font-bold text-sm">สังคมศึกษา ป.6 • ห้อง ป.6-1</span>
             <span id="tableBannerUnit" class="px-2.5 py-0.5 rounded-full bg-white/15 text-indigo-200 font-medium">หน่วยที่ 1</span>
           </div>
-          <div class="text-slate-300 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>ซิงค์คะแนนขึ้น Supabase แบบ Real-time อัตโนมัติทุกครั้งที่กรอกหรือสแกน</span>
+          <div class="flex items-center gap-3">
+            <button onclick="exportCurrentTableQuick()" class="px-2.5 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-semibold transition">
+              📥 ดาวน์โหลดตารางหน้านี้ (.csv)
+            </button>
           </div>
         </div>
 
@@ -257,6 +305,57 @@
         </div>
       </div>
     </main>
+
+    <!-- =================================================================== -->
+    <!-- Modal 0: ส่งออกคะแนนเป็นไฟล์ Excel (.csv รองรับภาษาไทย 100%) -->
+    <!-- =================================================================== -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border-2 border-slate-900 shadow-2xl text-xs">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">📊</span>
+            <div>
+              <h3 class="font-bold text-base text-slate-900">ส่งออกตารางคะแนนเป็นไฟล์ Excel (.csv)</h3>
+              <p class="text-[11px] text-slate-500">เข้ารหัสภาษาไทยมาตรฐาน (UTF-8 BOM) เปิดใน Microsoft Excel ได้ทันที</p>
+            </div>
+          </div>
+          <button onclick="closeModal('exportModal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
+        </div>
+
+        <div class="space-y-2.5">
+          <button onclick="exportUnitCsv(false)"
+            class="w-full p-3.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50/50 text-left transition flex items-center justify-between">
+            <div>
+              <div class="font-bold text-sm text-slate-900">1. ส่งออกคะแนนรายหน่วย (เฉพาะห้องที่เปิดอยู่)</div>
+              <p class="text-[11px] text-slate-500">รวมคะแนนดิบทุกชิ้นงาน และคะแนนเฉลี่ยสรุปของหน่วยปัจจุบัน</p>
+            </div>
+            <span class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold">ดาวน์โหลด</span>
+          </button>
+
+          <button onclick="exportSummaryGradeCsv(false)"
+            class="w-full p-3.5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/50 text-left transition flex items-center justify-between">
+            <div>
+              <div class="font-bold text-sm text-slate-900">2. ส่งออกสรุปรวมทุกหน่วย & ตัดเกรด (เฉพาะห้องที่เปิดอยู่)</div>
+              <p class="text-[11px] text-slate-500">รวมคะแนนทุกหน่วย + คะแนนสอบ + ร้อยละ + เกรด (4, 3.5, 3...)</p>
+            </div>
+            <span class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold">ดาวน์โหลด</span>
+          </button>
+
+          <button onclick="exportSummaryGradeCsv(true)"
+            class="w-full p-3.5 rounded-2xl border-2 border-slate-900 bg-amber-50/80 hover:bg-amber-100/80 text-left transition flex items-center justify-between">
+            <div>
+              <div class="font-bold text-sm text-slate-900">3. ส่งออกสรุปรวมทุกหน่วย & ตัดเกรด (ครบทั้ง 3 ห้อง ป.6-1 ถึง ป.6-3)</div>
+              <p class="text-[11px] text-slate-700">รวมนักเรียนทั้งระดับชั้นของวิชานี้ไว้ในไฟล์ Excel เดียวกัน</p>
+            </div>
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold">ดาวน์โหลด 3 ห้อง</span>
+          </button>
+        </div>
+
+        <div class="flex justify-end pt-2 border-t border-slate-200">
+          <button onclick="closeModal('exportModal')" class="px-4 py-2 rounded-2xl border border-slate-300 font-medium">ปิดหน้าต่าง</button>
+        </div>
+      </div>
+    </div>
 
     <!-- =================================================================== -->
     <!-- Modal 1: สแกน QR แบบใหม่ (สแกนก่อน -> เลือกช่องคะแนน -> ใส่คะแนน -> บันทึก) -->
@@ -409,7 +508,6 @@
           <button onclick="closeModal('studentManagerModal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
         </div>
 
-        <!-- วิธีที่ 1: ดึงรายชื่อทั้ง 3 ห้องจาก Google Sheet เดิมในคลิกเดียว -->
         <div class="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 flex flex-wrap items-center justify-between gap-2">
           <div>
             <div class="font-bold text-sky-950">วิธีที่ 1: ดึงรายชื่อทั้ง 3 ห้องจาก Google Sheet เดิมอัตโนมัติ</div>
@@ -420,7 +518,6 @@
           </button>
         </div>
 
-        <!-- เลือกห้องที่จะแก้ไข หรืออัปโหลดไฟล์ CSV -->
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div class="flex gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
             <button onclick="switchManageRoom('ป.6-1')" id="mgrRoom_1" class="px-3 py-1.5 rounded-xl font-bold"></button>
@@ -434,7 +531,6 @@
           </label>
         </div>
 
-        <!-- วิธีที่ 2: ก๊อปปี้จาก Excel มาวาง -->
         <div>
           <label class="font-semibold text-slate-700 block mb-1">
             วิธีที่ 2: ก๊อปปี้จาก Excel มาวางในห้อง <span id="mgrRoomLabel" class="text-indigo-600 font-bold">ป.6-1</span> (บรรทัดละ 1 คน: <code>เลขที่,รหัสนักเรียน,ชื่อ-นามสกุล</code>)
@@ -605,10 +701,10 @@
     const SUPABASE_TABLE = 'p6_smartscore_db';
     const SUPABASE_ROW_ID = 'main_gradebook_v1';
 
-    // ลิงก์ Google Sheet เดิมของคุณครูสำหรับดึงรายชื่อ ป.6-1, ป.6-2, ป.6-3 เข้า Supabase ในคลิกเดียว
+    // ลิงก์ Google Sheet เดิมสำหรับดึงรายชื่อ ป.6-1, ป.6-2, ป.6-3 เข้า Supabase
     const LEGACY_GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz8HZH4JoQuOPKrDFKio-S3aA5WHj0jbAk6ZIFzfnaJfKqT846P2Bj1PpBuos8Sa1ak/exec';
 
-    const STORAGE_KEY = 'P6_SMARTSCORE_SUPABASE_STATE_V2';
+    const STORAGE_KEY = 'P6_SMARTSCORE_SUPABASE_STATE_V3';
     const ROOM_LIST = ['ป.6-1', 'ป.6-2', 'ป.6-3'];
 
     const ROOM_TO_ASCII = { 'ป.6-1': 'P6-1', 'ป.6-2': 'P6-2', 'ป.6-3': 'P6-3' };
@@ -636,6 +732,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     let html5QrScanner = null;
     let isScannerRunning = false;
     let verticalHeader = false;
+    let currentViewMode = 'unit'; // 'unit' | 'summary'
     let tempTasks = [];
     let tempSummaryCols = [];
     let syncTimer = null;
@@ -671,6 +768,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       currentSubject: 'soc',
       currentRoom: 'ป.6-1',
       currentUnitId: 'u1',
+      gradeCalcBasis: 'percent', // 'percent' | 'raw'
       students: {
         'ป.6-1': [
           { no: 1, code: '6101', name: 'ด.ช.ธนกฤต รักเรียน' },
@@ -687,14 +785,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         ]
       },
       subjects: {
-        soc: { name: 'สังคมศึกษา ป.6', icon: '🌍', units: createDefaultUnit(), scores: {} },
-        his: { name: 'ประวัติศาสตร์ ป.6', icon: '🏛️', units: createDefaultUnit(), scores: {} },
-        occ: { name: 'การงานอาชีพ ป.6', icon: '🛠️', units: createDefaultUnit(), scores: {} }
+        soc: { name: 'สังคมศึกษา ป.6', icon: '🌍', examMax: 20, examScores: {}, units: createDefaultUnit(), scores: {} },
+        his: { name: 'ประวัติศาสตร์ ป.6', icon: '🏛️', examMax: 20, examScores: {}, units: createDefaultUnit(), scores: {} },
+        occ: { name: 'การงานอาชีพ ป.6', icon: '🛠️', examMax: 20, examScores: {}, units: createDefaultUnit(), scores: {} }
       }
     };
 
     // ============================================================================
-    // 2. ระบบ PWA (Manifest & Service Worker ในไฟล์เดียว)
+    // 2. ระบบ PWA (รองรับทั้งไฟล์จริง manifest.json / sw.js และ Fallback อัตโนมัติ)
     // ============================================================================
     function setupPwa() {
       const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
@@ -705,35 +803,39 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       </svg>`;
       const iconDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgIcon);
 
-      const manifestObj = {
-        name: 'P.6 SmartScore ระบบบันทึกคะแนนชั้น ป.6',
-        short_name: 'P.6 SmartScore',
-        description: 'ระบบบันทึกคะแนนชั้น ป.6 สังคมศึกษา ประวัติศาสตร์ การงานอาชีพ เชื่อมต่อ Supabase Real-time',
-        start_url: window.location.href,
-        display: 'standalone',
-        background_color: '#f4f6fb',
-        theme_color: '#0f172a',
-        icons: [
-          { src: iconDataUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-          { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-        ]
-      };
-
-      const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
-      document.getElementById('pwaManifestLink').setAttribute('href', URL.createObjectURL(manifestBlob));
+      // กรณีเปิดไฟล์เดี่ยวโดยไม่มี manifest.json บนเซิร์ฟเวอร์ ให้สร้าง Blob Manifest แทนอัตโนมัติ
+      fetch('manifest.json', { method: 'HEAD' }).catch(() => {
+        const manifestObj = {
+          name: 'P.6 SmartScore ระบบบันทึกคะแนนชั้น ป.6',
+          short_name: 'P.6 SmartScore',
+          description: 'ระบบบันทึกคะแนนและตัดเกรดชั้น ป.6 เชื่อมต่อ Supabase Real-time',
+          start_url: window.location.href,
+          display: 'standalone',
+          background_color: '#f4f6fb',
+          theme_color: '#0f172a',
+          icons: [
+            { src: iconDataUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+            { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        document.getElementById('pwaManifestLink').setAttribute('href', URL.createObjectURL(manifestBlob));
+      });
 
       if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-        const swCode = `
-          const CACHE_NAME = 'p6-smartscore-pwa-v2';
-          self.addEventListener('install', (e) => { self.skipWaiting(); });
-          self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
-          self.addEventListener('fetch', (e) => {
-            if (e.request.method !== 'GET') return;
-            e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-          });
-        `;
-        const swBlob = new Blob([swCode], { type: 'application/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+        navigator.serviceWorker.register('sw.js').catch(() => {
+          const swCode = `
+            const CACHE_NAME = 'p6-smartscore-pwa-v3';
+            self.addEventListener('install', (e) => { self.skipWaiting(); });
+            self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+            self.addEventListener('fetch', (e) => {
+              if (e.request.method !== 'GET') return;
+              e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+            });
+          `;
+          const swBlob = new Blob([swCode], { type: 'application/javascript' });
+          navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+        });
       }
 
       window.addEventListener('beforeinstallprompt', (e) => {
@@ -756,7 +858,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 3. ระบบเชื่อมต่อฐานข้อมูล Supabase & Real-time Sync อัตโนมัติ
+    // 3. ระบบเชื่อมต่อฐานข้อมูล Supabase & Real-time Sync
     // ============================================================================
     function setSyncStatus(status, customMessage) {
       const badge = document.getElementById('syncBadge');
@@ -929,7 +1031,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
           setSyncStatus('realtime');
           if (!silent) alert('✅ โหลดข้อมูลล่าสุดจาก Supabase สำเร็จ!');
         } else {
-          // สร้างข้อมูลเริ่มต้นเข้าตารางอัตโนมัติในครั้งแรก
           await pushToSupabase();
         }
       } catch (err) {
@@ -937,7 +1038,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       }
     }
 
-    // ดึงรายชื่อนักเรียนทั้ง 3 ห้องจาก Google Sheet เดิมเข้าสู่ Supabase
     async function importFromLegacySheetToSupabase() {
       setSyncStatus('syncing', 'กำลังดึงรายชื่อจาก Sheet เดิม...');
       try {
@@ -962,7 +1062,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 4. ระบบจัดการข้อมูลหลักและแสดงผลตารางคะแนน (จำนวนเต็ม ไม่มีทศนิยม)
+    // 4. ระบบคำนวณคะแนนรายหน่วย, รวมทุกหน่วย และตัดเกรดอัตโนมัติ (8 ระดับ)
     // ============================================================================
     function playScanBeep(isSuccess = true) {
       try {
@@ -991,6 +1091,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       if (!ROOM_LIST.includes(state.currentRoom)) {
         state.currentRoom = 'ป.6-1';
       }
+      if (!state.gradeCalcBasis) {
+        state.gradeCalcBasis = 'percent';
+      }
       const defaultMeta = {
         soc: { name: 'สังคมศึกษา ป.6', icon: '🌍' },
         his: { name: 'ประวัติศาสตร์ ป.6', icon: '🏛️' },
@@ -1001,11 +1104,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
           state.subjects[subKey] = {
             name: defaultMeta[subKey].name,
             icon: defaultMeta[subKey].icon,
+            examMax: 20,
+            examScores: {},
             units: createDefaultUnit(),
             scores: {}
           };
         }
         const sub = state.subjects[subKey];
+        if (sub.examMax === undefined) sub.examMax = 20;
+        if (!sub.examScores) sub.examScores = {};
         sub.units.forEach(u => {
           if (!Array.isArray(u.summaryCols) || u.summaryCols.length === 0) {
             u.summaryCols = [
@@ -1047,6 +1154,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       return sub.units.find(u => u.id === state.currentUnitId) || sub.units[0];
     }
 
+    // คำนวณคะแนนสรุปประจำหน่วย (จำนวนเต็ม)
     function calcUnitSummary(sub, room, stuCode, unit) {
       let rawAll = 0;
       let maxAll = 0;
@@ -1079,6 +1187,98 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       return { summaryValues, total, maxTotal };
     }
 
+    // ฟังก์ชันตัดเกรด 8 ระดับตามเกณฑ์มาตรฐานกระทรวงศึกษาธิการ
+    function computeGradeFromScore(scoreOutOf100) {
+      const s = Math.round(Number(scoreOutOf100) || 0);
+      if (s >= 80) return { grade: '4', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
+      if (s >= 75) return { grade: '3.5', color: 'bg-teal-100 text-teal-800 border-teal-300' };
+      if (s >= 70) return { grade: '3', color: 'bg-sky-100 text-sky-800 border-sky-300' };
+      if (s >= 65) return { grade: '2.5', color: 'bg-indigo-100 text-indigo-800 border-indigo-300' };
+      if (s >= 60) return { grade: '2', color: 'bg-violet-100 text-violet-800 border-violet-300' };
+      if (s >= 55) return { grade: '1.5', color: 'bg-amber-100 text-amber-800 border-amber-300' };
+      if (s >= 50) return { grade: '1', color: 'bg-orange-100 text-orange-800 border-orange-300' };
+      return { grade: '0', color: 'bg-rose-100 text-rose-800 border-rose-300' };
+    }
+
+    // คำนวณคะแนนรวมทุกหน่วย + คะแนนสอบ + ร้อยละ + เกรด ของนักเรียน 1 คน
+    function calcStudentAllUnitsSummary(sub, room, stuCode) {
+      const unitTotals = [];
+      let sumUnitsScore = 0;
+      let sumUnitsMax = 0;
+
+      sub.units.forEach(u => {
+        const uRes = calcUnitSummary(sub, room, stuCode, u);
+        unitTotals.push({ unitId: u.id, unitName: u.name, score: uRes.total, max: uRes.maxTotal });
+        sumUnitsScore += uRes.total;
+        sumUnitsMax += uRes.maxTotal;
+      });
+
+      const examMax = Math.round(Number(sub.examMax || 0));
+      const examKey = `${room}_${stuCode}`;
+      const hasExam = sub.examScores && sub.examScores[examKey] !== undefined && sub.examScores[examKey] !== '';
+      const examScore = hasExam ? Math.round(Number(sub.examScores[examKey])) : 0;
+
+      const grandTotal = sumUnitsScore + (examMax > 0 ? examScore : 0);
+      const grandMax = sumUnitsMax + (examMax > 0 ? examMax : 0);
+      const percentage = grandMax > 0 ? Math.round((grandTotal / grandMax) * 100) : 0;
+
+      const scoreForGrade = state.gradeCalcBasis === 'raw' ? grandTotal : percentage;
+      const gradeInfo = computeGradeFromScore(scoreForGrade);
+
+      return {
+        unitTotals,
+        sumUnitsScore,
+        sumUnitsMax,
+        examMax,
+        hasExam,
+        examScore,
+        grandTotal,
+        grandMax,
+        percentage,
+        grade: gradeInfo.grade,
+        gradeColor: gradeInfo.color
+      };
+    }
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      renderAll();
+    }
+
+    function updateExamMax(val) {
+      const sub = getActiveSub();
+      let m = Math.round(Number(val) || 0);
+      if (m < 0) m = 0;
+      if (m > 100) m = 100;
+      sub.examMax = m;
+      saveLocal(true);
+      renderAll();
+    }
+
+    function updateExamScore(room, stuCode, rawVal, maxExam) {
+      const sub = getActiveSub();
+      if (!sub.examScores) sub.examScores = {};
+      const key = `${room}_${stuCode}`;
+      if (rawVal === '' || rawVal === null) {
+        delete sub.examScores[key];
+      } else {
+        let intVal = Math.round(Number(rawVal));
+        if (isNaN(intVal)) intVal = 0;
+        if (intVal < 0) intVal = 0;
+        if (intVal > maxExam) intVal = maxExam;
+        sub.examScores[key] = intVal;
+      }
+      lastHighlightedCellKey = key + '_exam';
+      saveLocal(true, key + '_exam');
+      renderTable();
+    }
+
+    function updateGradeCalcBasis(basis) {
+      state.gradeCalcBasis = basis;
+      saveLocal(true);
+      renderAll();
+    }
+
     function renderAll() {
       const styles = {
         soc: { activeBg: 'bg-indigo-50/95 border-slate-900 cool-pill-shadow', badge: 'bg-indigo-600 text-white', iconBg: 'bg-indigo-100 border-indigo-200' },
@@ -1108,6 +1308,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         `;
       });
 
+      // ปุ่มสลับมุมมองตาราง
+      const btnUnit = document.getElementById('viewBtn_unit');
+      const btnSum = document.getElementById('viewBtn_summary');
+      const unitToolbar = document.getElementById('unitToolbarRow');
+      const sumToolbar = document.getElementById('summaryToolbarRow');
+
+      if (currentViewMode === 'unit') {
+        btnUnit.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-900 text-white shadow-sm';
+        btnSum.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+        unitToolbar.classList.remove('hidden');
+        sumToolbar.classList.add('hidden');
+        sumToolbar.classList.remove('flex');
+      } else {
+        btnSum.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-sm';
+        btnUnit.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+        unitToolbar.classList.add('hidden');
+        sumToolbar.classList.remove('hidden');
+        sumToolbar.classList.add('flex');
+      }
+
       ROOM_LIST.forEach((r, idx) => {
         const btn = document.getElementById('room_' + (idx + 1));
         const active = state.currentRoom === r;
@@ -1124,14 +1344,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         `<option value="${u.id}" ${u.id === unit.id ? 'selected' : ''}>${u.name} (งานดิบ ${u.tasks.length} / สรุป ${u.summaryCols.length})</option>`
       ).join('');
 
+      document.getElementById('examMaxInput').value = sub.examMax !== undefined ? sub.examMax : 20;
+      document.getElementById('gradeCalcBasisSelect').value = state.gradeCalcBasis || 'percent';
+
       document.getElementById('tableBannerIcon').textContent = sub.icon;
       document.getElementById('tableBannerTitle').textContent = `${sub.name} • ห้อง ${state.currentRoom}`;
-      document.getElementById('tableBannerUnit').textContent = unit.name;
+      document.getElementById('tableBannerUnit').textContent = currentViewMode === 'unit'
+        ? unit.name
+        : `🏆 สรุปรวมทุกหน่วย (${sub.units.length} หน่วย) & ตัดเกรด`;
 
       renderTable();
     }
 
     function renderTable() {
+      if (currentViewMode === 'summary') {
+        renderSummaryAndGradeTable();
+      } else {
+        renderUnitScoreTable();
+      }
+    }
+
+    function renderUnitScoreTable() {
       const sub = getActiveSub();
       const unit = getActiveUnit();
       const students = (state.students[state.currentRoom] || []).slice().sort((a, b) => a.no - b.no);
@@ -1206,6 +1439,101 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         `;
       }).join('');
       document.getElementById('gradeTableBody').innerHTML = bodyHtml;
+    }
+
+    // ตารางสรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ
+    function renderSummaryAndGradeTable() {
+      const sub = getActiveSub();
+      const students = (state.students[state.currentRoom] || []).slice().sort((a, b) => a.no - b.no);
+      const examMax = Math.round(Number(sub.examMax || 0));
+
+      const sampleCalc = calcStudentAllUnitsSummary(sub, state.currentRoom, 'sample');
+
+      const headHtml = `
+        <tr>
+          <th class="p-3 text-center w-14 font-semibold">เลขที่</th>
+          <th class="p-3 text-center w-24 font-semibold">รหัสนักเรียน</th>
+          <th class="p-3 text-left min-w-[180px] font-semibold">ชื่อ - นามสกุล</th>
+          ${sub.units.map(u => {
+            const uMax = u.summaryCols.reduce((a, b) => a + Number(b.max || 0), 0);
+            return `
+              <th class="p-2 text-center bg-slate-800 border-l border-slate-700 th-wrap align-bottom">
+                <div class="text-[11px] font-medium text-slate-100 leading-snug">${u.name}</div>
+                <div class="mt-1 inline-block px-1.5 py-0.2 rounded bg-indigo-400/25 text-indigo-200 text-[10px] font-bold">เต็ม ${uMax}</div>
+              </th>
+            `;
+          }).join('')}
+          <th class="p-2 text-center bg-indigo-950 border-l border-indigo-800 w-24 align-bottom">
+            <div class="text-[11px] font-bold text-indigo-100">รวมทุกหน่วย</div>
+            <div class="mt-1 inline-block px-1.5 py-0.2 rounded bg-indigo-400/25 text-indigo-200 text-[10px] font-bold">เต็ม ${sampleCalc.sumUnitsMax}</div>
+          </th>
+          ${examMax > 0 ? `
+            <th class="p-2 text-center bg-amber-900 border-l border-amber-700 w-24 align-bottom">
+              <div class="text-[11px] font-bold text-amber-100">สอบปลายภาค</div>
+              <div class="mt-1 inline-block px-1.5 py-0.2 rounded bg-amber-400/25 text-amber-200 text-[10px] font-bold">เต็ม ${examMax}</div>
+            </th>
+          ` : ''}
+          <th class="p-2 text-center bg-emerald-900 border-l border-emerald-700 w-24 align-bottom">
+            <div class="text-[11px] font-bold text-white">รวมสุทธิ</div>
+            <div class="mt-1 inline-block px-1.5 py-0.2 rounded bg-emerald-400/25 text-emerald-200 text-[10px] font-bold">เต็ม ${sampleCalc.grandMax}</div>
+          </th>
+          <th class="p-2 text-center bg-slate-900 border-l border-slate-700 w-20 align-bottom">
+            <div class="text-[11px] font-bold text-sky-300">ร้อยละ</div>
+            <div class="mt-1 text-[10px] text-slate-300">(100%)</div>
+          </th>
+          <th class="p-2 text-center bg-slate-950 border-l border-slate-800 w-24 align-bottom">
+            <div class="text-[11px] font-extrabold text-amber-300">เกรดที่ได้</div>
+            <div class="mt-1 text-[10px] text-slate-300">(0 - 4)</div>
+          </th>
+        </tr>
+      `;
+      document.getElementById('gradeTableHead').innerHTML = headHtml;
+
+      const gradeCount = { '4': 0, '3.5': 0, '3': 0, '2.5': 0, '2': 0, '1.5': 0, '1': 0, '0': 0 };
+
+      const bodyHtml = students.map((stu, rowIdx) => {
+        const res = calcStudentAllUnitsSummary(sub, state.currentRoom, stu.code);
+        gradeCount[res.grade] = (gradeCount[res.grade] || 0) + 1;
+        const stripe = rowIdx % 2 === 1 ? 'bg-slate-50/50' : 'bg-white';
+
+        return `
+          <tr class="${stripe} hover:bg-indigo-50/40 transition-colors">
+            <td class="p-2.5 text-center font-bold text-slate-600">${stu.no}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold">${stu.code}</span>
+            </td>
+            <td class="p-2.5 font-medium text-slate-800">${stu.name}</td>
+            ${res.unitTotals.map(u => `
+              <td class="p-2.5 text-center font-bold text-slate-700 border-l border-slate-100">${u.score}</td>
+            `).join('')}
+            <td class="p-2.5 text-center font-extrabold text-indigo-700 bg-indigo-50/50 border-l border-indigo-100">${res.sumUnitsScore}</td>
+            ${examMax > 0 ? `
+              <td class="p-1.5 text-center border-l border-amber-100 bg-amber-50/30">
+                <input type="number" step="1" min="0" max="${examMax}" value="${res.hasExam ? res.examScore : ''}" placeholder="-"
+                  onchange="updateExamScore('${state.currentRoom}','${stu.code}', this.value, ${examMax})"
+                  class="score-input w-14 text-center border border-amber-300 bg-white text-amber-950 rounded-xl py-1 font-bold focus:outline-none focus:border-amber-600" />
+              </td>
+            ` : ''}
+            <td class="p-2.5 text-center font-extrabold text-emerald-700 bg-emerald-50/70 border-l border-emerald-100 text-sm">${res.grandTotal}</td>
+            <td class="p-2.5 text-center font-bold text-sky-700 bg-sky-50/40 border-l border-sky-100">${res.percentage}%</td>
+            <td class="p-2 text-center border-l border-slate-200">
+              <span class="inline-block min-w-[44px] px-2.5 py-1 rounded-xl border font-extrabold text-sm ${res.gradeColor}">
+                ${res.grade}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('gradeTableBody').innerHTML = bodyHtml;
+
+      // แสดงสรุปสถิติเกรดด้านบนตาราง
+      const pillsEl = document.getElementById('gradeDistributionPills');
+      pillsEl.innerHTML = ['4', '3.5', '3', '2.5', '2', '1.5', '1', '0'].map(g => `
+        <span class="px-2 py-1 rounded-xl border ${ gradeCount[g] > 0 ? 'bg-slate-900 text-white border-slate-900 font-bold' : 'bg-slate-100 text-slate-400 border-slate-200' }">
+          เกรด ${g}: ${gradeCount[g]} คน
+        </span>
+      `).join('');
     }
 
     function updateScore(subjectId, room, stuCode, unitId, taskId, rawVal, maxScore) {
@@ -1288,7 +1616,138 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 5. ระบบสแกน QR แบบใหม่: สแกนติดตัวนักเรียนก่อน -> เลือกช่องงาน -> ใส่คะแนน -> บันทึก
+    // 5. ระบบส่งออกตารางคะแนนเป็นไฟล์ Excel (.csv รองรับภาษาไทย UTF-8 BOM)
+    // ============================================================================
+    function openExportModal() {
+      openModal('exportModal');
+    }
+
+    function exportCurrentTableQuick() {
+      if (currentViewMode === 'summary') {
+        exportSummaryGradeCsv(false);
+      } else {
+        exportUnitCsv(false);
+      }
+    }
+
+    function escapeCsvCell(val) {
+      const str = String(val !== undefined && val !== null ? val : '');
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    }
+
+    function downloadCsvFile(filename, rowsArray) {
+      const csvBody = rowsArray.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
+      // ใส่ \uFEFF (UTF-8 BOM) เพื่อให้เปิดใน Microsoft Excel แล้วภาษาไทยไม่เพี้ยน
+      const blob = new Blob(['\uFEFF' + csvBody], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportUnitCsv(allRooms = false) {
+      const sub = getActiveSub();
+      const unit = getActiveUnit();
+      const rooms = allRooms ? ROOM_LIST : [state.currentRoom];
+      const rows = [];
+
+      const unitMaxTotal = unit.summaryCols.reduce((a, b) => a + Number(b.max || 0), 0);
+      const header = [
+        'ห้องเรียน',
+        'เลขที่',
+        'รหัสนักเรียน',
+        'ชื่อ-นามสกุล',
+        ...unit.tasks.map(t => `${t.name} (เต็ม ${t.max})`),
+        ...unit.summaryCols.map(sc => `${sc.name} (เต็ม ${sc.max})`),
+        `รวม${unit.name} (เต็ม ${unitMaxTotal})`
+      ];
+      rows.push(header);
+
+      rooms.forEach(room => {
+        const students = (state.students[room] || []).slice().sort((a, b) => a.no - b.no);
+        students.forEach(stu => {
+          const sum = calcUnitSummary(sub, room, stu.code, unit);
+          const taskVals = unit.tasks.map(t => {
+            const key = `${room}_${stu.code}_${unit.id}_${t.id}`;
+            return (sub.scores[key] !== undefined && sub.scores[key] !== '') ? Math.round(Number(sub.scores[key])) : '';
+          });
+          rows.push([
+            room,
+            stu.no,
+            stu.code,
+            stu.name,
+            ...taskVals,
+            ...sum.summaryValues,
+            sum.total
+          ]);
+        });
+      });
+
+      const roomTag = allRooms ? 'ครบ3ห้อง' : state.currentRoom;
+      downloadCsvFile(`${sub.name}_${unit.name}_${roomTag}.csv`, rows);
+      closeModal('exportModal');
+    }
+
+    function exportSummaryGradeCsv(allRooms = false) {
+      const sub = getActiveSub();
+      const rooms = allRooms ? ROOM_LIST : [state.currentRoom];
+      const examMax = Math.round(Number(sub.examMax || 0));
+      const sample = calcStudentAllUnitsSummary(sub, state.currentRoom, 'sample');
+      const rows = [];
+
+      const header = [
+        'ห้องเรียน',
+        'เลขที่',
+        'รหัสนักเรียน',
+        'ชื่อ-นามสกุล',
+        ...sub.units.map(u => {
+          const uMax = u.summaryCols.reduce((a, b) => a + Number(b.max || 0), 0);
+          return `${u.name} (เต็ม ${uMax})`;
+        }),
+        `รวมคะแนนเก็บทุกหน่วย (เต็ม ${sample.sumUnitsMax})`
+      ];
+      if (examMax > 0) {
+        header.push(`สอบปลายภาค (เต็ม ${examMax})`);
+      }
+      header.push(
+        `คะแนนรวมสุทธิ (เต็ม ${sample.grandMax})`,
+        'คิดเป็นร้อยละ (%)',
+        'เกรดที่ได้'
+      );
+      rows.push(header);
+
+      rooms.forEach(room => {
+        const students = (state.students[room] || []).slice().sort((a, b) => a.no - b.no);
+        students.forEach(stu => {
+          const res = calcStudentAllUnitsSummary(sub, room, stu.code);
+          const row = [
+            room,
+            stu.no,
+            stu.code,
+            stu.name,
+            ...res.unitTotals.map(u => u.score),
+            res.sumUnitsScore
+          ];
+          if (examMax > 0) {
+            row.push(res.hasExam ? res.examScore : 0);
+          }
+          row.push(res.grandTotal, res.percentage, res.grade);
+          rows.push(row);
+        });
+      });
+
+      const roomTag = allRooms ? 'ครบทั้ง3ห้อง_ป.6-1ถึงป.6-3' : state.currentRoom;
+      downloadCsvFile(`สรุปคะแนนและเกรด_${sub.name}_${roomTag}.csv`, rows);
+      closeModal('exportModal');
+    }
+
+    // ============================================================================
+    // 6. ระบบสแกน QR แบบใหม่: สแกนติดตัวนักเรียนก่อน -> เลือกช่องงาน -> ใส่คะแนน -> บันทึก
     // ============================================================================
     function openScanModal() {
       scannedSession = {
@@ -1641,7 +2100,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 6. ระบบนำเข้าและจัดการรายชื่อนักเรียนกลาง (ป.6-1, ป.6-2, ป.6-3)
+    // 7. ระบบนำเข้าและจัดการรายชื่อนักเรียนกลาง (ป.6-1, ป.6-2, ป.6-3)
     // ============================================================================
     function openStudentManagerModal() {
       manageRoomCurrent = state.currentRoom;
@@ -1688,7 +2147,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         const cleanLine = line.trim();
         if (!cleanLine) return;
         const parts = cleanLine.split(/\t|,/);
-        // ข้ามบรรทัดหัวตารางถ้าเผลอก๊อปปี้ติดมา
         if (idx === 0 && (cleanLine.includes('เลขที่') || cleanLine.includes('รหัส'))) return;
 
         if (parts.length >= 3) {
@@ -1712,7 +2170,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 7. ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนดิบและช่องสรุป
+    // 8. ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนดิบและช่องสรุป
     // ============================================================================
     function openUnitConfigModal() {
       const u = getActiveUnit();
@@ -1814,7 +2272,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 8. ระบบสร้างและพิมพ์สติกเกอร์ QR Code ประจำตัวนักเรียน (ASCII สากล สแกนติด 100%)
+    // 9. ระบบสร้างและพิมพ์สติกเกอร์ QR Code ประจำตัวนักเรียน (ASCII สากล สแกนติด 100%)
     // ============================================================================
     function openQrPrintModal() {
       document.getElementById('qrRoomFilter').value = state.currentRoom;
