@@ -2,32 +2,43 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>P.6 SmartScore ✨ ระบบบันทึกคะแนนชั้น ป.6</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="P.6 SmartScore" />
+  <link id="pwaManifestLink" rel="manifest" href="" />
+  <title>P.6 SmartScore ⚡ ระบบบันทึกคะแนนชั้น ป.6 (Supabase Realtime)</title>
+
+  <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS Client v2, HTML5 QR Code Scanner & QRious Generator -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
   <style>
     :root {
       --bg-pastel: #f4f6fb;
-      --card-border: #e2e8f0;
     }
     body {
       font-family: 'Kanit', 'Plus Jakarta Sans', sans-serif;
       background-color: var(--bg-pastel);
       background-image:
-        radial-gradient(at 10% 10%, rgba(199, 210, 254, 0.35) 0px, transparent 50%),
-        radial-gradient(at 90% 15%, rgba(254, 205, 211, 0.3) 0px, transparent 50%),
-        radial-gradient(at 50% 90%, rgba(167, 243, 208, 0.25) 0px, transparent 50%);
+        radial-gradient(at 8% 8%, rgba(199, 210, 254, 0.4) 0px, transparent 50%),
+        radial-gradient(at 92% 12%, rgba(254, 205, 211, 0.35) 0px, transparent 50%),
+        radial-gradient(at 50% 92%, rgba(167, 243, 208, 0.3) 0px, transparent 50%);
       background-attachment: fixed;
       color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
     }
     .bento-card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
       border: 1.5px solid #e2e8f0;
-      box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.05);
+      box-shadow: 0 10px 28px -8px rgba(15, 23, 42, 0.06);
     }
     .cool-pill-shadow {
       box-shadow: 0 3px 0 0 #0f172a;
@@ -59,12 +70,18 @@
       transform: scale(1.06);
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
     }
-    /* ภาพ QR คมชัดสูง ไม่เบลอเวลาขยายหรือสั่งพิมพ์ */
     .crisp-qr {
       image-rendering: -moz-crisp-edges;
       image-rendering: -webkit-optimize-contrast;
       image-rendering: crisp-edges;
       image-rendering: pixelated;
+    }
+    @keyframes flashRow {
+      0% { background-color: rgba(16, 185, 129, 0.35); }
+      100% { background-color: transparent; }
+    }
+    .realtime-flash {
+      animation: flashRow 1.6s ease-out;
     }
 
     @page {
@@ -94,25 +111,25 @@
     }
   </style>
 </head>
-<body class="min-h-screen pb-14">
+<body class="min-h-screen pb-16">
 
-  <!-- ส่วนแสดงผลหลักบนหน้าจอ (ซ่อนอัตโนมัติเมื่อสั่งพิมพ์กระดาษ A4) -->
+  <!-- พื้นที่แสดงผลหลักบนหน้าจอ (ซ่อนอัตโนมัติเมื่อสั่งพิมพ์กระดาษ A4) -->
   <div class="no-print">
 
-    <!-- Top Floating Header (Cool & Cute Minimal) -->
+    <!-- Top Floating Navbar -->
     <header class="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200/80">
       <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         <!-- Brand Logo -->
         <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center font-extrabold leading-none shadow-md border-2 border-indigo-400">
-            <span class="text-[10px] text-indigo-300 tracking-wider">SMART</span>
+          <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center font-extrabold leading-none shadow-md border-2 border-emerald-400">
+            <span class="text-[9px] text-emerald-300 tracking-wider">SUPA</span>
             <span class="text-base">P.6</span>
           </div>
           <div>
             <div class="flex flex-wrap items-center gap-2">
               <h1 class="font-bold text-lg text-slate-900 tracking-tight">P.6 SmartScore</h1>
-              <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold border border-indigo-200">
-                ✨ จำนวนเต็ม • ไม่เอาทศนิยม
+              <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
+                ⚡ Real-time • จำนวนเต็ม • PWA
               </span>
             </div>
             <p class="text-xs text-slate-500">
@@ -121,27 +138,33 @@
           </div>
         </div>
 
-        <!-- Status Pill & Action Buttons -->
+        <!-- Status Badge & Action Buttons -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- แถบแสดงสถานะการซิงค์ DB อัตโนมัติ -->
-          <div id="syncBadge" onclick="syncToSheet()" title="คลิกเพื่อซิงค์ข้อมูลกับ Google Sheet ทันที"
-            class="cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-emerald-200 bg-emerald-50/90 text-emerald-800 flex items-center gap-2 font-medium transition hover:scale-[1.02]">
-            <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <!-- ป้ายสถานะการซิงค์ Supabase Real-time อัตโนมัติ (คลิกเพื่อซิงค์ซ้ำหรือดู SQL ได้) -->
+          <div onclick="handleSyncBadgeClick()" id="syncBadge" title="คลิกเพื่อซิงค์ข้อมูลกับ Supabase ทันที"
+            class="cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-semibold transition hover:scale-[1.02]">
+            <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span id="syncSpinner" class="hidden w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            <span id="syncText">พร้อมเชื่อมต่อ DB</span>
+            <span id="syncText">กำลังเชื่อมต่อ Supabase...</span>
           </div>
 
-          <button onclick="loadFromSheet(false)" class="text-xs px-3.5 py-2 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium shadow-sm flex items-center gap-1.5 transition active:scale-95">
-            <span>🔄</span>
-            <span>ดึงข้อมูล/รายชื่อ</span>
+          <!-- ปุ่มติดตั้งแอป PWA -->
+          <button onclick="installPwaApp()" id="pwaInstallBtn"
+            class="text-xs px-3 py-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold flex items-center gap-1.5 transition active:scale-95">
+            <span>📲</span>
+            <span>ติดตั้งแอป</span>
           </button>
 
-          <button onclick="openQrPrintModal()" class="text-xs px-3.5 py-2 rounded-2xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-medium shadow-sm flex items-center gap-1.5 transition active:scale-95">
+          <!-- ปุ่มพิมพ์สติกเกอร์ QR -->
+          <button onclick="openQrPrintModal()"
+            class="text-xs px-3.5 py-2 rounded-2xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-medium shadow-sm flex items-center gap-1.5 transition active:scale-95">
             <span>🏷️</span>
             <span>พิมพ์สติกเกอร์ QR</span>
           </button>
 
-          <button onclick="openScanModal()" class="text-xs px-4 py-2 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-semibold shadow-sm flex items-center gap-1.5 transition active:scale-95">
+          <!-- ปุ่มสแกน QR ลงคะแนน (สแกนก่อน -> เลือกงาน -> ใส่คะแนน -> กดบันทึก) -->
+          <button onclick="openScanModal()"
+            class="text-xs px-4 py-2 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-semibold shadow-sm flex items-center gap-1.5 transition active:scale-95">
             <span>📷</span>
             <span>สแกน QR ลงคะแนน</span>
           </button>
@@ -149,25 +172,46 @@
       </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 mt-6 space-y-5">
 
-      <!-- 1. การ์ดเลือกรายวิชา (Cute Bento Style) -->
+      <!-- แถบแจ้งเตือนอัตโนมัติหากยังไม่ได้รันคำสั่ง SQL สร้างตารางใน Supabase ครั้งแรก -->
+      <div id="sqlSetupBanner" class="hidden p-4 rounded-3xl bg-amber-50 border-2 border-amber-400 text-xs space-y-2 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="font-bold text-amber-950 text-sm flex items-center gap-2">
+            <span>⚠️</span>
+            <span>ตรวจพบว่าโปรเจกต์ Supabase นี้ยังไม่ได้สร้างตาราง <code>p6_smartscore_db</code> สำหรับเก็บข้อมูลครั้งแรก</span>
+          </div>
+          <button onclick="copySqlScript()" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm">
+            📋 คัดลอกคำสั่ง SQL ไปรันใน Supabase
+          </button>
+        </div>
+        <p class="text-amber-800">
+          วิธีทำ (ครั้งเดียว): กดปุ่มคัดลอกคำสั่ง SQL ด้านขวา → เปิดเมนู <b>SQL Editor</b> ในเว็บ Supabase ของคุณครู → วางโค้ดแล้วกด <b>Run</b> จากนั้นกลับมาหน้านี้แล้วกดปุ่ม <button onclick="initSupabaseConnection()" class="underline font-bold text-indigo-700">เชื่อมต่อใหม่</button> ได้เลยครับ
+        </p>
+      </div>
+
+      <!-- 1. การ์ดเลือกรายวิชา (Bento Style) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         <button onclick="selectSubject('soc')" id="sub_soc" class="p-4 rounded-3xl text-left transition-all duration-200 flex items-center justify-between"></button>
         <button onclick="selectSubject('his')" id="sub_his" class="p-4 rounded-3xl text-left transition-all duration-200 flex items-center justify-between"></button>
         <button onclick="selectSubject('occ')" id="sub_occ" class="p-4 rounded-3xl text-left transition-all duration-200 flex items-center justify-between"></button>
       </div>
 
-      <!-- 2. แถบควบคุมห้องเรียน หน่วยการเรียนรู้ และตั้งค่าช่องคะแนน -->
+      <!-- 2. แถบเลือกห้องเรียน นำเข้ารายชื่อ หน่วยการเรียนรู้ และตั้งค่าช่องคะแนน -->
       <div class="bento-card p-4 rounded-3xl flex flex-wrap items-center justify-between gap-3">
-        <!-- เลือกห้องเรียน ป.6-1, ป.6-2, ป.6-3 -->
         <div class="flex flex-wrap items-center gap-2">
+          <!-- สลับห้องเรียน ป.6-1, ป.6-2, ป.6-3 -->
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
             <button onclick="selectRoom('ป.6-1')" id="room_1" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
             <button onclick="selectRoom('ป.6-2')" id="room_2" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
             <button onclick="selectRoom('ป.6-3')" id="room_3" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"></button>
           </div>
+
+          <button onclick="openStudentManagerModal()" class="text-xs px-3.5 py-2 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-semibold shadow-sm transition flex items-center gap-1">
+            <span>📥</span>
+            <span>นำเข้า / จัดการรายชื่อ 3 ห้อง</span>
+          </button>
 
           <div class="h-5 w-[1.5px] bg-slate-200 mx-1 hidden sm:block"></div>
 
@@ -181,7 +225,6 @@
           </div>
         </div>
 
-        <!-- ปุ่มสลับหัวตาราง & ตั้งค่าจำนวนช่อง -->
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="toggleHeaderStyle()" id="headerStyleBtn" class="text-xs px-3.5 py-2 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium transition">
             📐 หัวตาราง: ตัดบรรทัดพอดีช่องแคบ
@@ -194,15 +237,15 @@
 
       <!-- 3. ตารางบันทึกคะแนน -->
       <div class="bento-card rounded-3xl overflow-hidden">
-        <!-- แถบสรุปข้อมูลตารางปัจจุบัน -->
         <div class="px-5 py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-2">
             <span id="tableBannerIcon" class="text-base">🌍</span>
             <span id="tableBannerTitle" class="font-bold text-sm">สังคมศึกษา ป.6 • ห้อง ป.6-1</span>
             <span id="tableBannerUnit" class="px-2.5 py-0.5 rounded-full bg-white/15 text-indigo-200 font-medium">หน่วยที่ 1</span>
           </div>
-          <div class="text-slate-300 flex items-center gap-3">
-            <span>💡 พิมพ์คะแนนดิบในช่อง ระบบคำนวณและปัดเศษเป็นจำนวนเต็มอัตโนมัติ</span>
+          <div class="text-slate-300 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>ซิงค์คะแนนขึ้น Supabase แบบ Real-time อัตโนมัติทุกครั้งที่กรอกหรือสแกน</span>
           </div>
         </div>
 
@@ -215,10 +258,206 @@
       </div>
     </main>
 
-    <!-- ========================================================= -->
-    <!-- Modal 1: ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนดิบ/สรุปอิสระ -->
-    <!-- ========================================================= -->
-    <div id="unitConfigModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <!-- =================================================================== -->
+    <!-- Modal 1: สแกน QR แบบใหม่ (สแกนก่อน -> เลือกช่องคะแนน -> ใส่คะแนน -> บันทึก) -->
+    <!-- =================================================================== -->
+    <div id="scanModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 max-h-[94vh] overflow-y-auto border-2 border-slate-900 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">📷</span>
+            <div>
+              <h3 class="font-bold text-base text-slate-900">สแกน QR ลงคะแนนรายวิชา</h3>
+              <p class="text-[11px] text-slate-500">1. สแกน QR นักเรียน → 2. เลือกช่องคะแนน & กรอกคะแนน → 3. กดบันทึก</p>
+            </div>
+          </div>
+          <button onclick="closeScanModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
+        </div>
+
+        <!-- แถบแสดงขั้นตอน (Step 1 -> Step 2) -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div id="stepIndicator1" class="p-2.5 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white font-bold flex items-center justify-center gap-1.5">
+            <span>1️⃣</span>
+            <span>สแกน QR นักเรียน</span>
+          </div>
+          <div id="stepIndicator2" class="p-2.5 rounded-2xl border-2 border-slate-200 bg-slate-100 text-slate-400 font-bold flex items-center justify-center gap-1.5">
+            <span>2️⃣</span>
+            <span>เลือกช่องงาน & บันทึก</span>
+          </div>
+        </div>
+
+        <!-- STEP 1 VIEW: กล้องสแกน QR Code -->
+        <div id="scanStep1Container" class="space-y-3">
+          <div class="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-slate-800 min-h-[240px] flex flex-col items-center justify-center">
+            <div id="qrReader" class="w-full"></div>
+            <div id="cameraStatusOverlay" class="text-xs text-slate-300 py-4 px-4 text-center">
+              กำลังเปิดกล้องสแกน QR Code... (นำสมุดหรือบัตร QR ของนักเรียนมาส่องได้เลย)
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <button onclick="restartScannerCamera()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium">
+              🔄 รีเซ็ตกล้อง / สลับกล้อง
+            </button>
+            <label class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium cursor-pointer border border-indigo-200">
+              🖼️ สแกนจากรูปถ่าย QR ในเครื่อง
+              <input type="file" accept="image/*" class="hidden" onchange="scanQrFromImageFile(this)" />
+            </label>
+          </div>
+
+          <div class="flex gap-2 text-xs pt-1">
+            <input id="manualScanInput" type="text" placeholder="หรือพิมพ์รหัสนักเรียน เช่น 6101 หรือ P6-1:6101 แล้วกด Enter"
+              class="flex-1 border border-slate-300 rounded-2xl px-3.5 py-2.5 font-medium focus:outline-none focus:border-indigo-500"
+              onkeydown="if(event.key==='Enter') handleScanStudentFirst(this.value)" />
+            <button onclick="handleScanStudentFirst(document.getElementById('manualScanInput').value)"
+              class="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-semibold">
+              ค้นหา นร.
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2 VIEW: เลือกช่องเก็บคะแนน + ใส่คะแนน + กดบันทึก -->
+        <div id="scanStep2Container" class="hidden space-y-4">
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 border-2 border-indigo-200 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div id="scannedStuNoBadge" class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center font-bold leading-none shrink-0">
+                <span class="text-[9px] text-indigo-300">เลขที่</span>
+                <span class="text-base">1</span>
+              </div>
+              <div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span id="scannedStuRoomBadge" class="px-2 py-0.5 rounded-lg bg-indigo-600 text-white text-[11px] font-bold">ป.6-1</span>
+                  <span id="scannedStuCodeBadge" class="px-2 py-0.5 rounded-lg bg-slate-200 text-slate-700 text-[11px] font-mono font-semibold">รหัส 6101</span>
+                </div>
+                <div id="scannedStuName" class="font-bold text-base text-slate-900 mt-1">ด.ช.ธนกฤต รักเรียน</div>
+              </div>
+            </div>
+            <button onclick="backToScanStep1()" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold shrink-0">
+              🔄 สแกนใหม่
+            </button>
+          </div>
+
+          <div id="scannedCrossRoomBanner" class="hidden px-3.5 py-2.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-medium flex items-center gap-2">
+            <span>⚠️</span>
+            <span id="scannedCrossRoomText">นักเรียนคนนี้อยู่คนละห้องกับตารางที่เปิดอยู่ ระบบจะบันทึกคะแนนลงห้องจริงของนักเรียนให้อัตโนมัติ</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div>
+              <label class="font-bold text-slate-700 block mb-1">รายวิชาที่ตรวจ</label>
+              <select id="scanStep2SubjectSelect" onchange="onScanStep2SubjectOrUnitChange('subject')" class="w-full border border-slate-300 rounded-2xl px-3 py-2 bg-slate-50 font-semibold text-slate-900"></select>
+            </div>
+            <div>
+              <label class="font-bold text-slate-700 block mb-1">หน่วยการเรียนรู้</label>
+              <select id="scanStep2UnitSelect" onchange="onScanStep2SubjectOrUnitChange('unit')" class="w-full border border-slate-300 rounded-2xl px-3 py-2 bg-slate-50 font-semibold text-slate-900"></select>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 text-xs">
+            <label class="font-bold text-slate-700 block">1. เลือกช่องเก็บคะแนนดิบ (ชิ้นงาน/ใบงาน)</label>
+            <div id="scanStep2TaskGrid" class="grid grid-cols-1 gap-2 max-h-44 overflow-y-auto pr-1"></div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-800 text-sm">2. ระบุคะแนนที่ได้ (จำนวนเต็ม)</span>
+              <span id="scanStep2MaxLabel" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">คะแนนเต็ม 10</span>
+            </div>
+
+            <div class="flex items-center justify-center gap-3">
+              <button type="button" onclick="adjustScanScore(-1)" class="w-11 h-11 rounded-2xl bg-white border border-slate-300 hover:bg-slate-100 text-lg font-extrabold text-slate-700 shadow-sm active:scale-95">−</button>
+              <input id="scanStep2ScoreInput" type="number" step="1" min="0"
+                class="w-28 text-center text-2xl font-extrabold text-indigo-700 bg-white border-2 border-indigo-400 rounded-2xl py-2 focus:outline-none focus:ring-4 focus:ring-indigo-200" />
+              <button type="button" onclick="adjustScanScore(1)" class="w-11 h-11 rounded-2xl bg-white border border-slate-300 hover:bg-slate-100 text-lg font-extrabold text-slate-700 shadow-sm active:scale-95">+</button>
+            </div>
+
+            <div id="scanQuickScoreBtns" class="flex flex-wrap items-center justify-center gap-1.5 pt-1"></div>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button type="button" onclick="confirmSaveScannedScore(true)"
+              class="flex-1 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2">
+              <span>💾</span>
+              <span>บันทึกคะแนน & สแกนคนต่อไป</span>
+            </button>
+            <button type="button" onclick="confirmSaveScannedScore(false)"
+              class="py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition active:scale-98">
+              บันทึกแล้วปิด
+            </button>
+          </div>
+        </div>
+
+        <div id="scanFeedback" class="text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-slate-100 text-slate-600">
+          พร้อมสแกน... ส่อง QR Code ของนักเรียนเพื่อเริ่มเลือกช่องคะแนน
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Modal 2: นำเข้าและจัดการรายชื่อนักเรียนทั้ง 3 ห้อง (ป.6-1, ป.6-2, ป.6-3) -->
+    <!-- =================================================================== -->
+    <div id="studentManagerModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-3xl max-w-xl w-full p-6 space-y-4 max-h-[92vh] overflow-y-auto border-2 border-slate-900 shadow-2xl text-xs">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg">📥</span>
+            <div>
+              <h3 class="font-bold text-base text-slate-900">นำเข้าและจัดการรายชื่อนักเรียนกลาง (3 ห้องเรียน)</h3>
+              <p class="text-[11px] text-slate-500">นำเข้าครั้งเดียว ใช้ร่วมกันทั้งวิชาสังคมศึกษา ประวัติศาสตร์ และการงานอาชีพ</p>
+            </div>
+          </div>
+          <button onclick="closeModal('studentManagerModal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
+        </div>
+
+        <!-- วิธีที่ 1: ดึงรายชื่อทั้ง 3 ห้องจาก Google Sheet เดิมในคลิกเดียว -->
+        <div class="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="font-bold text-sky-950">วิธีที่ 1: ดึงรายชื่อทั้ง 3 ห้องจาก Google Sheet เดิมอัตโนมัติ</div>
+            <p class="text-[11px] text-sky-700">ดึงข้อมูลจากแท็บ ป.6-1, ป.6-2, ป.6-3 ใน Sheet เดิมของคุณครูเข้า Supabase ทันที</p>
+          </div>
+          <button onclick="importFromLegacySheetToSupabase()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sm shrink-0">
+            🔄 ดึงรายชื่อจาก Sheet เดิม
+          </button>
+        </div>
+
+        <!-- เลือกห้องที่จะแก้ไข หรืออัปโหลดไฟล์ CSV -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div class="flex gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+            <button onclick="switchManageRoom('ป.6-1')" id="mgrRoom_1" class="px-3 py-1.5 rounded-xl font-bold"></button>
+            <button onclick="switchManageRoom('ป.6-2')" id="mgrRoom_2" class="px-3 py-1.5 rounded-xl font-bold"></button>
+            <button onclick="switchManageRoom('ป.6-3')" id="mgrRoom_3" class="px-3 py-1.5 rounded-xl font-bold"></button>
+          </div>
+
+          <label class="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold cursor-pointer">
+            📂 อัปโหลดไฟล์ .CSV เข้าห้องนี้
+            <input type="file" accept=".csv,.txt" class="hidden" onchange="handleCsvFileUpload(this)" />
+          </label>
+        </div>
+
+        <!-- วิธีที่ 2: ก๊อปปี้จาก Excel มาวาง -->
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">
+            วิธีที่ 2: ก๊อปปี้จาก Excel มาวางในห้อง <span id="mgrRoomLabel" class="text-indigo-600 font-bold">ป.6-1</span> (บรรทัดละ 1 คน: <code>เลขที่,รหัสนักเรียน,ชื่อ-นามสกุล</code>)
+          </label>
+          <textarea id="mgrStudentTextarea" rows="9"
+            class="w-full border border-slate-300 rounded-2xl p-3 font-mono text-xs focus:outline-none focus:border-indigo-500"
+            placeholder="1	6101	ด.ช.ธนกฤต รักเรียน&#10;2	6102	ด.ญ.กัญญาณี มีสุข"></textarea>
+          <p class="text-[11px] text-slate-400 mt-1">💡 สามารถคลุมดำ 3 คอลัมน์จากโปรแกรม Excel แล้วกดวาง (Ctrl+V) ในช่องนี้ได้เลยครับ</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+          <button onclick="closeModal('studentManagerModal')" class="px-4 py-2 rounded-2xl border border-slate-300 font-medium">ปิดหน้าต่าง</button>
+          <button onclick="saveManagedStudents()" class="px-5 py-2 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-bold shadow-sm">
+            💾 บันทึกรายชื่อห้องนี้ขึ้น Supabase
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Modal 3: ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนดิบและช่องสรุป -->
+    <!-- =================================================================== -->
+    <div id="unitConfigModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
       <div class="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-4 max-h-[92vh] overflow-y-auto border-2 border-slate-900 shadow-2xl">
         <div class="flex justify-between items-center border-b border-slate-200 pb-3">
           <div class="flex items-center gap-2">
@@ -246,25 +485,21 @@
             </div>
           </div>
 
-          <!-- ส่วนที่ 1: กำหนดจำนวนช่องคะแนนสรุป -->
           <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-200 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <span class="font-bold text-indigo-950 text-sm">1. ช่องคะแนนเฉลี่ย/สรุปประจำหน่วย</span>
-                <p class="text-[11px] text-indigo-700">กำหนดจำนวนช่องสรุปที่ต้องการ (เช่น 2 ช่องตามโครงสร้าง หรือปรับเพิ่ม/ลดได้)</p>
+                <p class="text-[11px] text-indigo-700">กำหนดจำนวนช่องสรุปที่ต้องการ (ค่าเริ่มต้น 2 ช่อง)</p>
               </div>
               <div class="flex items-center gap-1.5">
                 <span class="font-semibold text-indigo-900">จำนวนช่อง:</span>
                 <input id="cfgSummaryCountInput" type="number" min="1" max="10" class="w-16 border border-indigo-300 rounded-xl px-2 py-1.5 text-center font-bold bg-white" />
-                <button onclick="applySummaryCount()" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
-                  ตั้งจำนวน
-                </button>
+                <button onclick="applySummaryCount()" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700">ตั้งจำนวน</button>
               </div>
             </div>
             <div id="cfgSummaryColList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
           </div>
 
-          <!-- ส่วนที่ 2: กำหนดจำนวนช่องเก็บคะแนนดิบ -->
           <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -274,12 +509,8 @@
               <div class="flex items-center gap-1.5">
                 <span class="font-semibold text-slate-700">จำนวนช่อง:</span>
                 <input id="cfgTaskCountInput" type="number" min="1" max="30" class="w-16 border border-slate-300 rounded-xl px-2 py-1.5 text-center font-bold bg-white" />
-                <button onclick="applyTaskCount()" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800">
-                  ตั้งจำนวน
-                </button>
-                <button onclick="addTaskInModal()" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700">
-                  + เพิ่มช่อง
-                </button>
+                <button onclick="applyTaskCount()" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800">ตั้งจำนวน</button>
+                <button onclick="addTaskInModal()" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700">+ เพิ่มช่อง</button>
               </div>
             </div>
             <div id="cfgTaskList" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
@@ -287,120 +518,26 @@
         </div>
 
         <div class="flex justify-between items-center pt-3 border-t border-slate-200">
-          <button onclick="deleteCurrentUnit()" class="px-3.5 py-2 rounded-2xl text-rose-600 hover:bg-rose-50 text-xs font-semibold">
-            🗑️ ลบหน่วยนี้
-          </button>
+          <button onclick="deleteCurrentUnit()" class="px-3.5 py-2 rounded-2xl text-rose-600 hover:bg-rose-50 text-xs font-semibold">🗑️ ลบหน่วยนี้</button>
           <div class="flex gap-2">
             <button onclick="closeModal('unitConfigModal')" class="px-4 py-2 rounded-2xl border border-slate-300 text-xs font-medium">ยกเลิก</button>
-            <button onclick="saveUnitConfig()" class="px-5 py-2 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold shadow-sm">
-              💾 บันทึกการตั้งค่า
-            </button>
+            <button onclick="saveUnitConfig()" class="px-5 py-2 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold shadow-sm">💾 บันทึกการตั้งค่า</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- Modal 2: สแกน QR Code (รองรับกล้อง + อัปโหลดรูป + เช็กข้ามห้อง) -->
-    <!-- ========================================================= -->
-    <div id="scanModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 max-h-[94vh] overflow-y-auto border-2 border-slate-900 shadow-2xl">
-        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
-          <div class="flex items-center gap-2">
-            <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">📷</span>
-            <div>
-              <h3 class="font-bold text-base text-slate-900">สแกน QR Code ลงคะแนนด่วน</h3>
-              <p id="scanSubTitle" class="text-[11px] text-slate-500">วิชาสังคมศึกษา ป.6 • ห้อง ป.6-1</p>
-            </div>
-          </div>
-          <button onclick="closeScanModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-          <div>
-            <label class="font-semibold text-slate-700 block mb-1">1. ชิ้นงานที่จะลงคะแนน</label>
-            <select id="scanTaskSelect" class="w-full border border-slate-300 rounded-2xl px-3 py-2 bg-slate-50 font-semibold"></select>
-          </div>
-          <div>
-            <label class="font-semibold text-slate-700 block mb-1">2. คะแนนที่ให้ (จำนวนเต็ม)</label>
-            <input id="scanDefaultScore" type="number" class="w-full border border-slate-300 rounded-2xl px-3 py-2 font-bold text-indigo-700 text-center text-sm" value="10" />
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-700 block mb-1">3. เมื่อสแกนเจอเด็กคนละห้อง (ข้ามห้อง ป.6-1 / ป.6-2 / ป.6-3)</label>
-            <select id="crossRoomMode" class="w-full border border-amber-300 rounded-2xl px-3 py-2 bg-amber-50/80 font-medium text-amber-900">
-              <option value="ask">⚠️ แจ้งเตือนและถามก่อนบันทึก (แนะนำ)</option>
-              <option value="auto">⚡ บันทึกลงห้องจริงของนักเรียนให้อัตโนมัติ</option>
-              <option value="block">🚫 บล็อก ไม่ให้ลงคะแนนข้ามห้อง</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- กล่องกล้องสแกน QR -->
-        <div class="relative rounded-2xl overflow-hidden bg-slate-900 border-2 border-slate-800 min-h-[240px] flex flex-col items-center justify-center">
-          <div id="qrReader" class="w-full"></div>
-          <div id="cameraStatusOverlay" class="text-xs text-slate-300 py-3 px-4 text-center">
-            กำลังเปิดกล้องสแกน QR Code... (นำป้าย QR มาส่องในกรอบ)
-          </div>
-        </div>
-
-        <!-- ปุ่มสลับกล้อง หรือสแกนจากไฟล์ภาพถ่าย QR -->
-        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <button onclick="restartScannerCamera()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium">
-            🔄 รีเซ็ตกล้อง / สลับกล้อง
-          </button>
-          <label class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium cursor-pointer border border-indigo-200">
-            🖼️ สแกนจากรูปถ่าย QR ในเครื่อง
-            <input type="file" accept="image/*" class="hidden" onchange="scanQrFromImageFile(this)" />
-          </label>
-        </div>
-
-        <!-- ช่องพิมพ์รหัสนักเรียน หรือยิงเครื่องอ่านบาร์โค้ด -->
-        <div class="flex gap-2 text-xs">
-          <input id="manualScanInput" type="text" placeholder="พิมพ์รหัสนักเรียน เช่น 6101 หรือ P6-1:6101 แล้วกด Enter"
-            class="flex-1 border border-slate-300 rounded-2xl px-3.5 py-2.5 font-medium focus:outline-none focus:border-indigo-500"
-            onkeydown="if(event.key==='Enter') handleScanCode(this.value)" />
-          <button onclick="handleScanCode(document.getElementById('manualScanInput').value)"
-            class="px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-semibold">
-            ลงคะแนน
-          </button>
-        </div>
-
-        <!-- กล่องแจ้งเตือนเมื่อสแกนข้ามห้อง -->
-        <div id="crossRoomAlert" class="hidden p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 text-xs space-y-2.5">
-          <div id="crossRoomMsg" class="font-bold text-amber-950 leading-relaxed"></div>
-          <div class="flex flex-wrap gap-2">
-            <button id="btnCrossSaveKeep" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
-              ✅ บันทึกลงห้องจริงของ นร. ทันที
-            </button>
-            <button id="btnCrossSwitchRoom" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
-              🔄 สลับหน้าจอไปห้องนั้นแล้วบันทึก
-            </button>
-            <button onclick="document.getElementById('crossRoomAlert').classList.add('hidden')" class="px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium">
-              ยกเลิก
-            </button>
-          </div>
-        </div>
-
-        <!-- แถบแสดงผลการสแกนล่าสุด -->
-        <div id="scanFeedback" class="text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-slate-100 text-slate-600">
-          พร้อมสแกน... (รองรับทั้งป้าย QR รหัส P6-1:6101 และการพิมพ์รหัส 6101)
-        </div>
-      </div>
-    </div>
-
-    <!-- ========================================================= -->
-    <!-- Modal 3: สร้างและพิมพ์สติกเกอร์ QR Code (แก้ไขให้อ่านติด 100%) -->
-    <!-- ========================================================= -->
-    <div id="qrPrintModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <!-- =================================================================== -->
+    <!-- Modal 4: สร้างและพิมพ์สติกเกอร์ QR Code ประจำตัวนักเรียน -->
+    <!-- =================================================================== -->
+    <div id="qrPrintModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
       <div class="bg-white rounded-3xl max-w-5xl w-full p-6 space-y-4 max-h-[92vh] flex flex-col border-2 border-slate-900 shadow-2xl">
         <div class="flex flex-wrap justify-between items-center border-b border-slate-200 pb-3 gap-2">
           <div class="flex items-center gap-2.5">
             <span class="w-9 h-9 rounded-2xl bg-fuchsia-100 text-fuchsia-700 flex items-center justify-center font-bold text-lg">🏷️</span>
             <div>
-              <h3 class="font-bold text-base text-slate-900">สร้างและพิมพ์บัตร QR Code ประจำตัวนักเรียน (แก้ไขสแกนติด 100%)</h3>
-              <p class="text-xs text-slate-500">
-                เข้ารหัสมาตรฐานสากล (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-indigo-700 font-mono">P6-1:รหัส</code>) พร้อมขอบขาว Quiet Zone สแกนติดไวด้วยกล้องมือถือทุกยี่ห้อ
-              </p>
+              <h3 class="font-bold text-base text-slate-900">สร้างและพิมพ์บัตร QR Code ประจำตัวนักเรียน</h3>
+              <p class="text-xs text-slate-500">เข้ารหัสมาตรฐานสากล (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-indigo-700 font-mono">P6-1:รหัส</code>) พร้อมขอบขาว Quiet Zone สแกนติดไว 100%</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -411,7 +548,6 @@
           </div>
         </div>
 
-        <!-- ตัวเลือกตั้งค่าการพิมพ์ QR -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs">
           <div>
             <label class="font-semibold block mb-1 text-slate-700">1. เลือกห้องเรียนที่จะพิมพ์</label>
@@ -449,11 +585,7 @@
           </div>
         </div>
 
-        <!-- พื้นที่จำลองกระดาษ A4 (คุณครูสามารถยกมือถือส่องสแกนจากหน้าจอนี้เพื่อทดสอบได้ทันที!) -->
         <div class="flex-1 overflow-y-auto bg-slate-100 p-4 rounded-2xl border border-slate-200">
-          <div class="text-center text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl py-1.5 px-3 mb-3 max-w-xl mx-auto font-medium">
-            💡 คุณครูสามารถลองเปิดกล้องมือถือส่องที่ QR Code ด้านล่างบนหน้าจอนี้ได้เลยครับ จะเห็นว่าอ่านรหัสติดทันที!
-          </div>
           <div id="qrPreviewContainer" class="bg-white max-w-[210mm] mx-auto p-5 rounded-2xl shadow-sm space-y-6"></div>
         </div>
       </div>
@@ -466,35 +598,57 @@
 
   <script>
     // ============================================================================
-    // ตั้งค่าหลัก & ผูก URL ของ Google Apps Script ถาวร
+    // 1. ผูก URL และ PUBLISHABLE KEY ของ SUPABASE ถาวร
     // ============================================================================
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz8HZH4JoQuOPKrDFKio-S3aA5WHj0jbAk6ZIFzfnaJfKqT846P2Bj1PpBuos8Sa1ak/exec';
-    const STORAGE_KEY = 'P6_SMARTSCORE_STATE_V5';
+    const SUPABASE_URL = 'https://fejpderqbifyqchljjnr.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_3dy0MHROoILowx2yMUITiA_EXUFVqAK';
+    const SUPABASE_TABLE = 'p6_smartscore_db';
+    const SUPABASE_ROW_ID = 'main_gradebook_v1';
+
+    // ลิงก์ Google Sheet เดิมของคุณครูสำหรับดึงรายชื่อ ป.6-1, ป.6-2, ป.6-3 เข้า Supabase ในคลิกเดียว
+    const LEGACY_GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz8HZH4JoQuOPKrDFKio-S3aA5WHj0jbAk6ZIFzfnaJfKqT846P2Bj1PpBuos8Sa1ak/exec';
+
+    const STORAGE_KEY = 'P6_SMARTSCORE_SUPABASE_STATE_V2';
     const ROOM_LIST = ['ป.6-1', 'ป.6-2', 'ป.6-3'];
 
-    // แปลงชื่อห้องภาษาไทย เป็นรหัส ASCII สากลสำหรับใส่ใน QR Code (แก้ปัญหา QRious อ่านภาษาไทยเพี้ยน)
-    const ROOM_TO_ASCII = {
-      'ป.6-1': 'P6-1',
-      'ป.6-2': 'P6-2',
-      'ป.6-3': 'P6-3'
-    };
+    const ROOM_TO_ASCII = { 'ป.6-1': 'P6-1', 'ป.6-2': 'P6-2', 'ป.6-3': 'P6-3' };
     const ASCII_TO_ROOM = {
-      'P6-1': 'ป.6-1',
-      'P6-2': 'ป.6-2',
-      'P6-3': 'ป.6-3',
-      'P61': 'ป.6-1',
-      'P62': 'ป.6-2',
-      'P63': 'ป.6-3'
+      'P6-1': 'ป.6-1', 'P6-2': 'ป.6-2', 'P6-3': 'ป.6-3',
+      'P61': 'ป.6-1', 'P62': 'ป.6-2', 'P63': 'ป.6-3'
     };
+
+    const SQL_SETUP_SCRIPT = `CREATE TABLE IF NOT EXISTS public.p6_smartscore_db (
+  id TEXT PRIMARY KEY,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE public.p6_smartscore_db ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read write p6_smartscore_db" ON public.p6_smartscore_db;
+CREATE POLICY "Allow public read write p6_smartscore_db"
+  ON public.p6_smartscore_db FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
+
+    let supabaseClient = null;
+    let realtimeChannel = null;
+    let clientSessionId = 'client_' + Math.random().toString(36).substring(2, 10);
+    let lastHighlightedCellKey = '';
 
     let html5QrScanner = null;
     let isScannerRunning = false;
-    let lastScannedCode = '';
-    let lastScannedTime = 0;
     let verticalHeader = false;
     let tempTasks = [];
     let tempSummaryCols = [];
     let syncTimer = null;
+    let manageRoomCurrent = 'ป.6-1';
+    let deferredPwaPrompt = null;
+
+    let scannedSession = {
+      room: 'ป.6-1',
+      student: null,
+      subjectId: 'soc',
+      unitId: 'u1',
+      taskId: 't1'
+    };
 
     const createDefaultUnit = () => ([
       {
@@ -533,13 +687,283 @@
         ]
       },
       subjects: {
-        soc: { name: 'สังคมศึกษา ป.6', icon: '🌍', theme: 'indigo', units: createDefaultUnit(), scores: {} },
-        his: { name: 'ประวัติศาสตร์ ป.6', icon: '🏛️', theme: 'rose', units: createDefaultUnit(), scores: {} },
-        occ: { name: 'การงานอาชีพ ป.6', icon: '🛠️', theme: 'emerald', units: createDefaultUnit(), scores: {} }
+        soc: { name: 'สังคมศึกษา ป.6', icon: '🌍', units: createDefaultUnit(), scores: {} },
+        his: { name: 'ประวัติศาสตร์ ป.6', icon: '🏛️', units: createDefaultUnit(), scores: {} },
+        occ: { name: 'การงานอาชีพ ป.6', icon: '🛠️', units: createDefaultUnit(), scores: {} }
       }
     };
 
-    // เสียงติ๊ดสั้นๆ เมื่อสแกน QR สำเร็จ (ใช้ Web Audio API ไม่ต้องพึ่งไฟล์เสียงภายนอก)
+    // ============================================================================
+    // 2. ระบบ PWA (Manifest & Service Worker ในไฟล์เดียว)
+    // ============================================================================
+    function setupPwa() {
+      const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="120" fill="#0f172a"/>
+        <rect x="24" y="24" width="464" height="464" rx="100" fill="none" stroke="#34d399" stroke-width="16"/>
+        <text x="50%" y="38%" dominant-baseline="middle" text-anchor="middle" fill="#34d399" font-family="sans-serif" font-weight="800" font-size="90">SMART</text>
+        <text x="50%" y="68%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="900" font-size="185">P.6</text>
+      </svg>`;
+      const iconDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgIcon);
+
+      const manifestObj = {
+        name: 'P.6 SmartScore ระบบบันทึกคะแนนชั้น ป.6',
+        short_name: 'P.6 SmartScore',
+        description: 'ระบบบันทึกคะแนนชั้น ป.6 สังคมศึกษา ประวัติศาสตร์ การงานอาชีพ เชื่อมต่อ Supabase Real-time',
+        start_url: window.location.href,
+        display: 'standalone',
+        background_color: '#f4f6fb',
+        theme_color: '#0f172a',
+        icons: [
+          { src: iconDataUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+        ]
+      };
+
+      const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+      document.getElementById('pwaManifestLink').setAttribute('href', URL.createObjectURL(manifestBlob));
+
+      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+        const swCode = `
+          const CACHE_NAME = 'p6-smartscore-pwa-v2';
+          self.addEventListener('install', (e) => { self.skipWaiting(); });
+          self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+          self.addEventListener('fetch', (e) => {
+            if (e.request.method !== 'GET') return;
+            e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+          });
+        `;
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+      }
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPwaPrompt = e;
+        const btn = document.getElementById('pwaInstallBtn');
+        btn.classList.remove('bg-indigo-50', 'text-indigo-700');
+        btn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+      });
+    }
+
+    async function installPwaApp() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        const { outcome } = await deferredPwaPrompt.userChoice;
+        if (outcome === 'accepted') deferredPwaPrompt = null;
+      } else {
+        alert('📲 วิธีติดตั้งแอป P.6 SmartScore ลงหน้าจอ:\n\n• สำหรับ iPhone / iPad (Safari): กดปุ่ม "แชร์ (Share)" ด้านล่าง แล้วเลือก "เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)"\n• สำหรับ Android / Chrome บนคอมพิวเตอร์: กดเมนูมุมขวาบนของเบราว์เซอร์ แล้วเลือก "ติดตั้งแอป (Install App)"');
+      }
+    }
+
+    // ============================================================================
+    // 3. ระบบเชื่อมต่อฐานข้อมูล Supabase & Real-time Sync อัตโนมัติ
+    // ============================================================================
+    function setSyncStatus(status, customMessage) {
+      const badge = document.getElementById('syncBadge');
+      const dot = document.getElementById('syncDot');
+      const spinner = document.getElementById('syncSpinner');
+      const text = document.getElementById('syncText');
+      const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      if (status === 'syncing') {
+        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-sky-300 bg-sky-50 text-sky-800 flex items-center gap-2 font-semibold';
+        dot.classList.add('hidden');
+        spinner.classList.remove('hidden');
+        text.textContent = customMessage || 'กำลังซิงค์ Supabase...';
+      } else if (status === 'realtime') {
+        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-semibold';
+        spinner.classList.add('hidden');
+        dot.classList.remove('hidden');
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+        text.textContent = customMessage || `⚡ Real-time ซิงค์แล้ว (${timeStr})`;
+        document.getElementById('sqlSetupBanner').classList.add('hidden');
+      } else if (status === 'need_sql') {
+        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-amber-400 bg-amber-50 text-amber-900 flex items-center gap-2 font-semibold';
+        spinner.classList.add('hidden');
+        dot.classList.remove('hidden');
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping';
+        text.textContent = '⚠️ รอสร้างตาราง SQL ครั้งแรก';
+        document.getElementById('sqlSetupBanner').classList.remove('hidden');
+      } else if (status === 'error') {
+        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-rose-300 bg-rose-50 text-rose-800 flex items-center gap-2 font-semibold';
+        spinner.classList.add('hidden');
+        dot.classList.remove('hidden');
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+        text.textContent = customMessage || 'ซิงค์ไม่สำเร็จ (แตะเพื่อซิงค์ใหม่)';
+      }
+    }
+
+    function handleSyncBadgeClick() {
+      pushToSupabase();
+    }
+
+    function copySqlScript() {
+      navigator.clipboard.writeText(SQL_SETUP_SCRIPT).then(() => {
+        alert('✅ คัดลอกคำสั่ง SQL เรียบร้อย!\n\nนำไปวางในเมนู SQL Editor ของเว็บ Supabase แล้วกด Run ได้เลยครับ');
+      }).catch(() => {
+        prompt('คัดลอกคำสั่ง SQL ด้านล่างไปวางใน SQL Editor ของ Supabase:', SQL_SETUP_SCRIPT);
+      });
+    }
+
+    async function initSupabaseConnection() {
+      try {
+        setSyncStatus('syncing', 'กำลังเชื่อมต่อ Supabase...');
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        await pullFromSupabase(true);
+
+        if (realtimeChannel) {
+          supabaseClient.removeChannel(realtimeChannel);
+        }
+
+        realtimeChannel = supabaseClient
+          .channel('p6_smartscore_realtime_room')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: SUPABASE_TABLE, filter: `id=eq.${SUPABASE_ROW_ID}` },
+            (payload) => {
+              if (payload.new && payload.new.payload) {
+                applyIncomingRealtimeState(payload.new.payload);
+              }
+            }
+          )
+          .on(
+            'broadcast',
+            { event: 'grade_updated' },
+            (msg) => {
+              if (msg.payload && msg.payload.sender !== clientSessionId && msg.payload.state) {
+                applyIncomingRealtimeState(msg.payload.state, msg.payload.changedKey);
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        setSyncStatus('error', 'เชื่อมต่อ Supabase ไม่สำเร็จ');
+      }
+    }
+
+    function applyIncomingRealtimeState(incomingState, changedKey = '') {
+      if (!incomingState || !incomingState.subjects) return;
+      const keepSubject = state.currentSubject;
+      const keepRoom = state.currentRoom;
+      const keepUnitId = state.currentUnitId;
+
+      state = incomingState;
+      state.currentSubject = keepSubject;
+      state.currentRoom = keepRoom;
+      state.currentUnitId = keepUnitId;
+      normalizeState();
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      lastHighlightedCellKey = changedKey || '';
+      renderAll();
+      setSyncStatus('realtime', `⚡ ซิงค์ Real-time (${new Date().toLocaleTimeString('th-TH')})`);
+    }
+
+    async function pushToSupabase(changedKey = '') {
+      if (!supabaseClient) return;
+      setSyncStatus('syncing', 'กำลังบันทึกขึ้น Supabase...');
+      try {
+        const nowIso = new Date().toISOString();
+        const { error } = await supabaseClient
+          .from(SUPABASE_TABLE)
+          .upsert({
+            id: SUPABASE_ROW_ID,
+            payload: state,
+            updated_at: nowIso
+          }, { onConflict: 'id' });
+
+        if (error) {
+          if (error.code === '42P01' || (error.message && error.message.includes('p6_smartscore_db'))) {
+            setSyncStatus('need_sql');
+            return;
+          }
+          throw error;
+        }
+
+        if (realtimeChannel) {
+          realtimeChannel.send({
+            type: 'broadcast',
+            event: 'grade_updated',
+            payload: {
+              sender: clientSessionId,
+              changedKey: changedKey,
+              state: state
+            }
+          });
+        }
+
+        setSyncStatus('realtime');
+      } catch (err) {
+        setSyncStatus('error', 'ซิงค์ไม่สำเร็จ (คลิกเพื่อลองใหม่)');
+      }
+    }
+
+    async function pullFromSupabase(silent = false) {
+      if (!supabaseClient) return;
+      setSyncStatus('syncing', 'กำลังโหลดข้อมูลจาก Supabase...');
+      try {
+        const { data, error } = await supabaseClient
+          .from(SUPABASE_TABLE)
+          .select('payload, updated_at')
+          .eq('id', SUPABASE_ROW_ID)
+          .maybeSingle();
+
+        if (error) {
+          if (error.code === '42P01' || (error.message && error.message.includes('p6_smartscore_db'))) {
+            setSyncStatus('need_sql');
+            return;
+          }
+          throw error;
+        }
+
+        if (data && data.payload && data.payload.subjects) {
+          const keepSub = state.currentSubject;
+          const keepRoom = state.currentRoom;
+          state = data.payload;
+          state.currentSubject = keepSub;
+          state.currentRoom = keepRoom;
+          normalizeState();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          renderAll();
+          setSyncStatus('realtime');
+          if (!silent) alert('✅ โหลดข้อมูลล่าสุดจาก Supabase สำเร็จ!');
+        } else {
+          // สร้างข้อมูลเริ่มต้นเข้าตารางอัตโนมัติในครั้งแรก
+          await pushToSupabase();
+        }
+      } catch (err) {
+        setSyncStatus('error', 'โหลดข้อมูลไม่สำเร็จ (แตะลองใหม่)');
+      }
+    }
+
+    // ดึงรายชื่อนักเรียนทั้ง 3 ห้องจาก Google Sheet เดิมเข้าสู่ Supabase
+    async function importFromLegacySheetToSupabase() {
+      setSyncStatus('syncing', 'กำลังดึงรายชื่อจาก Sheet เดิม...');
+      try {
+        const res = await fetch(LEGACY_GAS_WEB_APP_URL + '?action=load');
+        const json = await res.json();
+        if (json && json.students) {
+          state.students = json.students;
+          normalizeState();
+          saveLocal(true);
+          renderAll();
+          if (document.getElementById('studentManagerModal').classList.contains('flex')) {
+            switchManageRoom(manageRoomCurrent);
+          }
+          const totalStu = ROOM_LIST.reduce((acc, r) => acc + (state.students[r] ? state.students[r].length : 0), 0);
+          alert(`🎉 ดึงรายชื่อนักเรียนทั้ง 3 ห้อง (${totalStu} คน) จาก Google Sheet เดิมเข้าสู่ Supabase เรียบร้อยครับ!`);
+        } else {
+          alert('ไม่พบข้อมูลรายชื่อใน Google Sheet เดิม');
+        }
+      } catch (e) {
+        alert('ไม่สามารถเชื่อมต่อ Google Sheet เดิมได้ กรุณาตรวจสอบอินเทอร์เน็ต');
+      }
+    }
+
+    // ============================================================================
+    // 4. ระบบจัดการข้อมูลหลักและแสดงผลตารางคะแนน (จำนวนเต็ม ไม่มีทศนิยม)
+    // ============================================================================
     function playScanBeep(isSuccess = true) {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -555,45 +979,15 @@
       } catch (e) {}
     }
 
-    // แถบแสดงสถานะการซิงค์ DB
-    function setSyncStatus(status, customMessage) {
-      const badge = document.getElementById('syncBadge');
-      const dot = document.getElementById('syncDot');
-      const spinner = document.getElementById('syncSpinner');
-      const text = document.getElementById('syncText');
-      const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-      if (status === 'loading') {
-        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-amber-300 bg-amber-50 text-amber-800 flex items-center gap-2 font-medium';
-        dot.classList.add('hidden');
-        spinner.classList.remove('hidden');
-        text.textContent = customMessage || 'กำลังโหลดจาก Sheet DB...';
-      } else if (status === 'syncing') {
-        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-sky-300 bg-sky-50 text-sky-800 flex items-center gap-2 font-medium';
-        dot.classList.add('hidden');
-        spinner.classList.remove('hidden');
-        text.textContent = customMessage || 'กำลังซิงค์ขึ้น DB...';
-      } else if (status === 'synced') {
-        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-medium';
-        spinner.classList.add('hidden');
-        dot.classList.remove('hidden');
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-        text.textContent = customMessage || `ซิงค์ DB ล่าสุด: ${timeStr}`;
-      } else if (status === 'error') {
-        badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-rose-300 bg-rose-50 text-rose-800 flex items-center gap-2 font-medium';
-        spinner.classList.add('hidden');
-        dot.classList.remove('hidden');
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping';
-        text.textContent = customMessage || 'ซิงค์ไม่สำเร็จ (แตะเพื่อลองใหม่)';
-      }
-    }
-
     function normalizeState() {
       if (state.students['ป.6/1'] && !state.students['ป.6-1']) {
         state.students['ป.6-1'] = state.students['ป.6/1'];
         state.students['ป.6-2'] = state.students['ป.6/2'] || [];
         state.students['ป.6-3'] = state.students['ป.6/3'] || [];
       }
+      ROOM_LIST.forEach(r => {
+        if (!Array.isArray(state.students[r])) state.students[r] = [];
+      });
       if (!ROOM_LIST.includes(state.currentRoom)) {
         state.currentRoom = 'ป.6-1';
       }
@@ -624,23 +1018,23 @@
     }
 
     function init() {
+      setupPwa();
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try { state = JSON.parse(saved); } catch (e) {}
       }
       normalizeState();
       renderAll();
-      loadFromSheet(true);
+      initSupabaseConnection();
     }
 
-    function saveLocal(autoSync = true) {
+    function saveLocal(autoSync = true, changedKey = '') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      if (autoSync) {
-        setSyncStatus('syncing', 'กำลังเตรียมซิงค์...');
+      if (autoSync && supabaseClient) {
         if (syncTimer) clearTimeout(syncTimer);
         syncTimer = setTimeout(() => {
-          syncToSheet();
-        }, 450);
+          pushToSupabase(changedKey);
+        }, 250);
       }
     }
 
@@ -687,21 +1081,9 @@
 
     function renderAll() {
       const styles = {
-        soc: {
-          activeBg: 'bg-indigo-50/90 border-slate-900 cool-pill-shadow',
-          badge: 'bg-indigo-600 text-white',
-          iconBg: 'bg-indigo-100 border-indigo-200'
-        },
-        his: {
-          activeBg: 'bg-rose-50/90 border-slate-900 cool-pill-shadow',
-          badge: 'bg-rose-600 text-white',
-          iconBg: 'bg-rose-100 border-rose-200'
-        },
-        occ: {
-          activeBg: 'bg-emerald-50/90 border-slate-900 cool-pill-shadow',
-          badge: 'bg-emerald-600 text-white',
-          iconBg: 'bg-emerald-100 border-emerald-200'
-        }
+        soc: { activeBg: 'bg-indigo-50/95 border-slate-900 cool-pill-shadow', badge: 'bg-indigo-600 text-white', iconBg: 'bg-indigo-100 border-indigo-200' },
+        his: { activeBg: 'bg-rose-50/95 border-slate-900 cool-pill-shadow', badge: 'bg-rose-600 text-white', iconBg: 'bg-rose-100 border-rose-200' },
+        occ: { activeBg: 'bg-emerald-50/95 border-slate-900 cool-pill-shadow', badge: 'bg-emerald-600 text-white', iconBg: 'bg-emerald-100 border-emerald-200' }
       };
 
       ['soc', 'his', 'occ'].forEach(id => {
@@ -714,9 +1096,7 @@
         }`;
         el.innerHTML = `
           <div class="flex items-center gap-3.5">
-            <div class="w-12 h-12 rounded-2xl ${st.iconBg} border flex items-center justify-center text-2xl shadow-sm">
-              ${s.icon}
-            </div>
+            <div class="w-12 h-12 rounded-2xl ${st.iconBg} border flex items-center justify-center text-2xl shadow-sm">${s.icon}</div>
             <div>
               <div class="font-bold text-sm text-slate-900">${s.name}</div>
               <div class="text-xs text-slate-500">3 ห้องเรียน • ${s.units.length} หน่วย</div>
@@ -732,9 +1112,7 @@
         const btn = document.getElementById('room_' + (idx + 1));
         const active = state.currentRoom === r;
         btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
-          active
-            ? 'bg-slate-900 text-white shadow-sm'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+          active ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
         }`;
         btn.textContent = `${r} (${(state.students[r] || []).length})`;
       });
@@ -766,7 +1144,7 @@
           <th class="p-3 text-center w-14 font-semibold">เลขที่</th>
           <th class="p-3 text-center w-24 font-semibold">รหัสนักเรียน</th>
           <th class="p-3 text-left min-w-[180px] font-semibold">ชื่อ - นามสกุล</th>
-          ${unit.tasks.map((t, idx) => `
+          ${unit.tasks.map(t => `
             <th class="p-2 text-center bg-slate-800 border-l border-slate-700 align-bottom">
               <div class="${thClass} mx-auto font-medium text-[11px] text-slate-100 leading-snug">${t.name}</div>
               <div class="mt-1 inline-block px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 text-[10px] font-bold">เต็ม ${t.max}</div>
@@ -790,7 +1168,7 @@
         document.getElementById('gradeTableBody').innerHTML = `
           <tr>
             <td colspan="${4 + unit.tasks.length + unit.summaryCols.length}" class="py-10 text-center text-slate-400">
-              ยังไม่มีรายชื่อนักเรียนในห้อง ${state.currentRoom} (กรุณาเพิ่มรายชื่อในแท็บ ${state.currentRoom} ของ Google Sheet แล้วกด "ดึงข้อมูล/รายชื่อ")
+              ยังไม่มีรายชื่อนักเรียนในห้อง ${state.currentRoom} (คลิกปุ่ม "📥 นำเข้า / จัดการรายชื่อ 3 ห้อง" เพื่อเพิ่มหรือดึงจาก Sheet เดิม)
             </td>
           </tr>
         `;
@@ -800,8 +1178,9 @@
       const bodyHtml = students.map((stu, rowIdx) => {
         const sum = calcUnitSummary(sub, state.currentRoom, stu.code, unit);
         const stripe = rowIdx % 2 === 1 ? 'bg-slate-50/50' : 'bg-white';
+        const isRowFlashed = lastHighlightedCellKey && lastHighlightedCellKey.startsWith(`${state.currentRoom}_${stu.code}_`);
         return `
-          <tr class="${stripe} hover:bg-indigo-50/40 transition-colors">
+          <tr class="${stripe} ${isRowFlashed ? 'realtime-flash' : ''} hover:bg-indigo-50/40 transition-colors">
             <td class="p-2.5 text-center font-bold text-slate-600">${stu.no}</td>
             <td class="p-2.5 text-center">
               <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold">${stu.code}</span>
@@ -814,7 +1193,7 @@
               return `
                 <td class="p-1.5 text-center border-l border-slate-100">
                   <input type="number" step="1" min="0" max="${t.max}" value="${val}" placeholder="-"
-                    onchange="updateScore('${state.currentRoom}','${stu.code}','${unit.id}','${t.id}', this.value, ${t.max})"
+                    onchange="updateScore('${state.currentSubject}','${state.currentRoom}','${stu.code}','${unit.id}','${t.id}', this.value, ${t.max})"
                     class="score-input w-14 text-center border ${hasScore ? 'border-indigo-300 bg-indigo-50/40 text-indigo-950' : 'border-slate-200 bg-slate-50/60 text-slate-700'} rounded-xl py-1.5 font-bold focus:bg-white focus:border-indigo-600 focus:outline-none" />
                 </td>
               `;
@@ -829,8 +1208,9 @@
       document.getElementById('gradeTableBody').innerHTML = bodyHtml;
     }
 
-    function updateScore(room, stuCode, unitId, taskId, rawVal, maxScore) {
-      const sub = getActiveSub();
+    function updateScore(subjectId, room, stuCode, unitId, taskId, rawVal, maxScore) {
+      const sub = state.subjects[subjectId];
+      if (!sub) return;
       const key = `${room}_${stuCode}_${unitId}_${taskId}`;
       if (rawVal === '' || rawVal === null) {
         delete sub.scores[key];
@@ -841,7 +1221,8 @@
         if (intVal > maxScore) intVal = maxScore;
         sub.scores[key] = intVal;
       }
-      saveLocal(true);
+      lastHighlightedCellKey = key;
+      saveLocal(true, key);
       renderTable();
     }
 
@@ -907,7 +1288,431 @@
     }
 
     // ============================================================================
-    // ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนดิบและช่องสรุป
+    // 5. ระบบสแกน QR แบบใหม่: สแกนติดตัวนักเรียนก่อน -> เลือกช่องงาน -> ใส่คะแนน -> บันทึก
+    // ============================================================================
+    function openScanModal() {
+      scannedSession = {
+        room: state.currentRoom,
+        student: null,
+        subjectId: state.currentSubject,
+        unitId: state.currentUnitId,
+        taskId: getActiveUnit().tasks[0] ? getActiveUnit().tasks[0].id : ''
+      };
+      openModal('scanModal');
+      backToScanStep1();
+    }
+
+    function setScanStepUI(stepNumber) {
+      const s1 = document.getElementById('stepIndicator1');
+      const s2 = document.getElementById('stepIndicator2');
+      const view1 = document.getElementById('scanStep1Container');
+      const view2 = document.getElementById('scanStep2Container');
+
+      if (stepNumber === 1) {
+        s1.className = 'p-2.5 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white font-bold flex items-center justify-center gap-1.5';
+        s2.className = 'p-2.5 rounded-2xl border-2 border-slate-200 bg-slate-100 text-slate-400 font-bold flex items-center justify-center gap-1.5';
+        view1.classList.remove('hidden');
+        view2.classList.add('hidden');
+      } else {
+        s1.className = 'p-2.5 rounded-2xl border-2 border-emerald-200 bg-emerald-50 text-emerald-700 font-bold flex items-center justify-center gap-1.5';
+        s2.className = 'p-2.5 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white font-bold flex items-center justify-center gap-1.5';
+        view1.classList.add('hidden');
+        view2.classList.remove('hidden');
+      }
+    }
+
+    function backToScanStep1() {
+      setScanStepUI(1);
+      document.getElementById('manualScanInput').value = '';
+      startScannerCamera();
+    }
+
+    async function startScannerCamera() {
+      const overlay = document.getElementById('cameraStatusOverlay');
+      overlay.classList.remove('hidden');
+      overlay.textContent = 'กำลังเปิดกล้องสแกน QR Code...';
+
+      if (html5QrScanner && isScannerRunning) {
+        try {
+          await html5QrScanner.stop();
+          isScannerRunning = false;
+        } catch (e) {}
+      }
+
+      try {
+        html5QrScanner = new Html5Qrcode('qrReader');
+        await html5QrScanner.start(
+          { facingMode: 'environment' },
+          { fps: 15, qrbox: { width: 230, height: 230 }, aspectRatio: 1.0 },
+          (decodedText) => {
+            handleScanStudentFirst(decodedText);
+          },
+          () => {}
+        );
+        isScannerRunning = true;
+        overlay.classList.add('hidden');
+      } catch (err) {
+        overlay.classList.remove('hidden');
+        overlay.textContent = '⚠️ ไม่สามารถเปิดกล้องอัตโนมัติได้ (กรุณาอนุญาตการใช้กล้อง หรือใช้ปุ่มสแกนจากรูปถ่าย / พิมพ์รหัสนักเรียนด้านล่าง)';
+      }
+    }
+
+    function restartScannerCamera() {
+      startScannerCamera();
+    }
+
+    async function scanQrFromImageFile(inputEl) {
+      if (!inputEl.files || inputEl.files.length === 0) return;
+      const file = inputEl.files[0];
+      try {
+        if (!html5QrScanner) html5QrScanner = new Html5Qrcode('qrReader');
+        if (isScannerRunning) {
+          await html5QrScanner.stop();
+          isScannerRunning = false;
+        }
+        const decodedText = await html5QrScanner.scanFile(file, true);
+        handleScanStudentFirst(decodedText);
+      } catch (err) {
+        playScanBeep(false);
+        const fb = document.getElementById('scanFeedback');
+        fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-rose-100 text-rose-700';
+        fb.textContent = '❌ ไม่พบ QR Code ในรูปภาพที่เลือก กรุณาลองถ่ายให้ชัดขึ้นครับ';
+      }
+      inputEl.value = '';
+    }
+
+    async function closeScanModal() {
+      if (html5QrScanner && isScannerRunning) {
+        try {
+          await html5QrScanner.stop();
+          isScannerRunning = false;
+        } catch (e) {}
+      }
+      closeModal('scanModal');
+    }
+
+    function findStudentAcrossRooms(rawInput) {
+      const clean = String(rawInput || '').trim();
+      if (!clean) return null;
+
+      if (clean.includes(':')) {
+        const parts = clean.split(':');
+        const asciiPrefix = parts[0].trim().toUpperCase();
+        const rawCode = decodeURIComponent(parts.slice(1).join(':').trim());
+        const mappedRoom = ASCII_TO_ROOM[asciiPrefix] || asciiPrefix;
+        if (state.students[mappedRoom]) {
+          const foundInRoom = state.students[mappedRoom].find(s => String(s.code).trim() === rawCode);
+          if (foundInRoom) return { room: mappedRoom, student: foundInRoom };
+        }
+      }
+
+      if (clean.includes('|')) {
+        const parts = clean.split('|');
+        const qrRoom = parts[0].trim();
+        const qrCode = parts[1].trim();
+        if (state.students[qrRoom]) {
+          const foundInRoom = state.students[qrRoom].find(s => String(s.code).trim() === qrCode);
+          if (foundInRoom) return { room: qrRoom, student: foundInRoom };
+        }
+      }
+
+      const currentRoomList = state.students[state.currentRoom] || [];
+      const foundCurrent = currentRoomList.find(s => String(s.code).trim() === clean);
+      if (foundCurrent) return { room: state.currentRoom, student: foundCurrent };
+
+      for (const r of ROOM_LIST) {
+        const found = (state.students[r] || []).find(s => String(s.code).trim() === clean);
+        if (found) return { room: r, student: found };
+      }
+      return null;
+    }
+
+    async function handleScanStudentFirst(rawCode) {
+      const code = String(rawCode || '').trim();
+      if (!code) return;
+
+      const found = findStudentAcrossRooms(code);
+      const fb = document.getElementById('scanFeedback');
+
+      if (!found) {
+        playScanBeep(false);
+        fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-rose-100 text-rose-700';
+        fb.textContent = `❌ ไม่พบรหัสนักเรียน "${code}" ในระบบ (ตรวจสอบรายชื่อ ป.6-1 ถึง ป.6-3)`;
+        return;
+      }
+
+      playScanBeep(true);
+
+      if (html5QrScanner && isScannerRunning) {
+        try {
+          await html5QrScanner.stop();
+          isScannerRunning = false;
+        } catch (e) {}
+      }
+
+      scannedSession.room = found.room;
+      scannedSession.student = found.student;
+      scannedSession.subjectId = state.currentSubject;
+      scannedSession.unitId = state.currentUnitId;
+
+      const currentSub = state.subjects[scannedSession.subjectId];
+      const currentUnit = currentSub.units.find(u => u.id === scannedSession.unitId) || currentSub.units[0];
+      scannedSession.unitId = currentUnit.id;
+      if (!currentUnit.tasks.some(t => t.id === scannedSession.taskId)) {
+        scannedSession.taskId = currentUnit.tasks[0] ? currentUnit.tasks[0].id : '';
+      }
+
+      renderScanStep2Card();
+      setScanStepUI(2);
+
+      fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-indigo-50 text-indigo-800';
+      fb.textContent = `🎯 สแกนพบ: ${found.student.name} (${found.room}) — เลือกช่องคะแนนและกดบันทึกได้เลยครับ`;
+    }
+
+    function renderScanStep2Card() {
+      const stu = scannedSession.student;
+      const room = scannedSession.room;
+      if (!stu) return;
+
+      document.getElementById('scannedStuNoBadge').innerHTML = `
+        <span class="text-[9px] text-indigo-300">เลขที่</span>
+        <span class="text-base">${stu.no}</span>
+      `;
+      document.getElementById('scannedStuRoomBadge').textContent = room;
+      document.getElementById('scannedStuCodeBadge').textContent = `รหัส ${stu.code}`;
+      document.getElementById('scannedStuName').textContent = stu.name;
+
+      const crossBanner = document.getElementById('scannedCrossRoomBanner');
+      if (room !== state.currentRoom) {
+        crossBanner.classList.remove('hidden');
+        document.getElementById('scannedCrossRoomText').textContent =
+          `นักเรียนอยู่ห้อง ${room} (คนละห้องกับตารางที่เปิดอยู่) เมื่อกดบันทึก ระบบจะส่งคะแนนเข้าห้อง ${room} ให้อัตโนมัติ`;
+      } else {
+        crossBanner.classList.add('hidden');
+      }
+
+      const subSel = document.getElementById('scanStep2SubjectSelect');
+      subSel.innerHTML = ['soc', 'his', 'occ'].map(sId => {
+        const s = state.subjects[sId];
+        return `<option value="${sId}" ${sId === scannedSession.subjectId ? 'selected' : ''}>${s.icon} ${s.name}</option>`;
+      }).join('');
+
+      const activeSub = state.subjects[scannedSession.subjectId];
+      const unitSel = document.getElementById('scanStep2UnitSelect');
+      unitSel.innerHTML = activeSub.units.map(u =>
+        `<option value="${u.id}" ${u.id === scannedSession.unitId ? 'selected' : ''}>${u.name}</option>`
+      ).join('');
+
+      renderScanStep2TasksAndScore();
+    }
+
+    function onScanStep2SubjectOrUnitChange(type) {
+      scannedSession.subjectId = document.getElementById('scanStep2SubjectSelect').value;
+      const sub = state.subjects[scannedSession.subjectId];
+
+      if (type === 'subject') {
+        scannedSession.unitId = sub.units[0].id;
+        document.getElementById('scanStep2UnitSelect').innerHTML = sub.units.map(u =>
+          `<option value="${u.id}" ${u.id === scannedSession.unitId ? 'selected' : ''}>${u.name}</option>`
+        ).join('');
+      } else {
+        scannedSession.unitId = document.getElementById('scanStep2UnitSelect').value;
+      }
+
+      const unit = sub.units.find(u => u.id === scannedSession.unitId) || sub.units[0];
+      scannedSession.taskId = unit.tasks[0] ? unit.tasks[0].id : '';
+      renderScanStep2TasksAndScore();
+    }
+
+    function renderScanStep2TasksAndScore() {
+      const sub = state.subjects[scannedSession.subjectId];
+      const unit = sub.units.find(u => u.id === scannedSession.unitId) || sub.units[0];
+      const stu = scannedSession.student;
+      const room = scannedSession.room;
+
+      if (!unit.tasks.some(t => t.id === scannedSession.taskId) && unit.tasks[0]) {
+        scannedSession.taskId = unit.tasks[0].id;
+      }
+
+      const grid = document.getElementById('scanStep2TaskGrid');
+      grid.innerHTML = unit.tasks.map((t, idx) => {
+        const key = `${room}_${stu.code}_${unit.id}_${t.id}`;
+        const existing = sub.scores[key];
+        const hasExisting = existing !== undefined && existing !== '';
+        const selected = t.id === scannedSession.taskId;
+
+        return `
+          <button type="button" onclick="selectScanStep2Task('${t.id}')"
+            class="w-full p-2.5 rounded-2xl border-2 text-left transition flex items-center justify-between gap-2 ${
+              selected
+                ? 'border-indigo-600 bg-indigo-50/90 text-indigo-950 font-bold shadow-sm'
+                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium'
+            }">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-6 h-6 rounded-lg ${selected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-[11px] font-bold shrink-0">${idx + 1}</span>
+              <span class="truncate">${t.name}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${hasExisting
+                ? `<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">เดิม: ${existing}/${t.max}</span>`
+                : `<span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 text-[10px]">ยังไม่ส่ง</span>`}
+              <span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-[10px] font-bold">เต็ม ${t.max}</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      const currentTask = unit.tasks.find(t => t.id === scannedSession.taskId) || unit.tasks[0];
+      if (!currentTask) return;
+
+      document.getElementById('scanStep2MaxLabel').textContent = `คะแนนเต็ม ${currentTask.max} คะแนน`;
+
+      const scoreKey = `${room}_${stu.code}_${unit.id}_${currentTask.id}`;
+      const existingVal = sub.scores[scoreKey];
+      const scoreInput = document.getElementById('scanStep2ScoreInput');
+      scoreInput.max = currentTask.max;
+      scoreInput.value = (existingVal !== undefined && existingVal !== '') ? Math.round(Number(existingVal)) : currentTask.max;
+
+      const maxS = Number(currentTask.max || 10);
+      const halfS = Math.round(maxS / 2);
+      const presets = [
+        { label: `เต็ม (${maxS})`, val: maxS, cls: 'bg-indigo-600 text-white' },
+        { label: `${Math.max(0, maxS - 1)} คะแนน`, val: Math.max(0, maxS - 1), cls: 'bg-white text-slate-700 border border-slate-300' },
+        { label: `${Math.max(0, maxS - 2)} คะแนน`, val: Math.max(0, maxS - 2), cls: 'bg-white text-slate-700 border border-slate-300' },
+        { label: `ครึ่ง (${halfS})`, val: halfS, cls: 'bg-white text-slate-700 border border-slate-300' },
+        { label: `0`, val: 0, cls: 'bg-rose-50 text-rose-700 border border-rose-200' }
+      ];
+      document.getElementById('scanQuickScoreBtns').innerHTML = presets.map(p => `
+        <button type="button" onclick="setScanStep2Score(${p.val})"
+          class="px-3 py-1.5 rounded-xl text-xs font-bold ${p.cls} hover:opacity-90 active:scale-95 transition">
+          ${p.label}
+        </button>
+      `).join('');
+    }
+
+    function selectScanStep2Task(taskId) {
+      scannedSession.taskId = taskId;
+      renderScanStep2TasksAndScore();
+    }
+
+    function setScanStep2Score(val) {
+      document.getElementById('scanStep2ScoreInput').value = Math.round(Number(val));
+    }
+
+    function adjustScanScore(delta) {
+      const sub = state.subjects[scannedSession.subjectId];
+      const unit = sub.units.find(u => u.id === scannedSession.unitId) || sub.units[0];
+      const task = unit.tasks.find(t => t.id === scannedSession.taskId) || unit.tasks[0];
+      const input = document.getElementById('scanStep2ScoreInput');
+      let nextVal = Math.round(Number(input.value || 0)) + delta;
+      if (nextVal < 0) nextVal = 0;
+      if (task && nextVal > task.max) nextVal = task.max;
+      input.value = nextVal;
+    }
+
+    function confirmSaveScannedScore(scanNextAfterSave = true) {
+      const stu = scannedSession.student;
+      if (!stu) return;
+
+      const sub = state.subjects[scannedSession.subjectId];
+      const unit = sub.units.find(u => u.id === scannedSession.unitId) || sub.units[0];
+      const task = unit.tasks.find(t => t.id === scannedSession.taskId) || unit.tasks[0];
+      if (!task) return;
+
+      const rawScore = document.getElementById('scanStep2ScoreInput').value;
+      const score = Math.min(task.max, Math.max(0, Math.round(Number(rawScore) || 0)));
+
+      state.currentSubject = scannedSession.subjectId;
+      state.currentUnitId = scannedSession.unitId;
+
+      updateScore(scannedSession.subjectId, scannedSession.room, stu.code, unit.id, task.id, score, task.max);
+      renderAll();
+      playScanBeep(true);
+
+      const fb = document.getElementById('scanFeedback');
+      fb.className = 'text-xs font-bold text-center py-2.5 px-3 rounded-2xl bg-emerald-100 text-emerald-800';
+      fb.textContent = `✅ บันทึก ${score}/${task.max} คะแนน (${task.name}) ให้ ${stu.name} (${scannedSession.room}) เรียบร้อย!`;
+
+      if (scanNextAfterSave) {
+        backToScanStep1();
+      } else {
+        closeScanModal();
+      }
+    }
+
+    // ============================================================================
+    // 6. ระบบนำเข้าและจัดการรายชื่อนักเรียนกลาง (ป.6-1, ป.6-2, ป.6-3)
+    // ============================================================================
+    function openStudentManagerModal() {
+      manageRoomCurrent = state.currentRoom;
+      switchManageRoom(manageRoomCurrent);
+      openModal('studentManagerModal');
+    }
+
+    function switchManageRoom(roomName) {
+      manageRoomCurrent = roomName;
+      ROOM_LIST.forEach((r, i) => {
+        const btn = document.getElementById('mgrRoom_' + (i + 1));
+        btn.className = `px-3 py-1.5 rounded-xl font-bold transition ${
+          r === roomName ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-white'
+        }`;
+        btn.textContent = `${r} (${(state.students[r] || []).length})`;
+      });
+      document.getElementById('mgrRoomLabel').textContent = roomName;
+      const list = (state.students[roomName] || []).slice().sort((a, b) => a.no - b.no);
+      document.getElementById('mgrStudentTextarea').value = list.map(s => `${s.no},${s.code},${s.name}`).join('\n');
+    }
+
+    function handleCsvFileUpload(inputEl) {
+      if (!inputEl.files || inputEl.files.length === 0) return;
+      const file = inputEl.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = String(e.target.result || '').trim();
+        if (content) {
+          document.getElementById('mgrStudentTextarea').value = content;
+          alert(`📂 โหลดข้อมูลจากไฟล์ "${file.name}" เข้าสู่ช่องข้อความเรียบร้อย กดปุ่ม "บันทึกรายชื่อห้องนี้ขึ้น Supabase" ได้เลยครับ`);
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+      inputEl.value = '';
+    }
+
+    function saveManagedStudents() {
+      const raw = document.getElementById('mgrStudentTextarea').value.trim();
+      const lines = raw ? raw.split(/\r?\n/) : [];
+      const newList = [];
+      const roomIdx = ROOM_LIST.indexOf(manageRoomCurrent);
+
+      lines.forEach((line, idx) => {
+        const cleanLine = line.trim();
+        if (!cleanLine) return;
+        const parts = cleanLine.split(/\t|,/);
+        // ข้ามบรรทัดหัวตารางถ้าเผลอก๊อปปี้ติดมา
+        if (idx === 0 && (cleanLine.includes('เลขที่') || cleanLine.includes('รหัส'))) return;
+
+        if (parts.length >= 3) {
+          const no = Number(parts[0].trim()) || (newList.length + 1);
+          const code = parts[1].trim() || (`6${roomIdx + 1}${String(no).padStart(2, '0')}`);
+          const name = parts.slice(2).join(' ').trim();
+          if (name) newList.push({ no, code, name });
+        } else if (parts.length === 2) {
+          const no = Number(parts[0].trim()) || (newList.length + 1);
+          const code = `6${roomIdx + 1}${String(no).padStart(2, '0')}`;
+          const name = parts[1].trim();
+          if (name) newList.push({ no, code, name });
+        }
+      });
+
+      state.students[manageRoomCurrent] = newList;
+      saveLocal(true);
+      renderAll();
+      switchManageRoom(manageRoomCurrent);
+      alert(`✅ บันทึกรายชื่อห้อง ${manageRoomCurrent} (${newList.length} คน) และซิงค์ขึ้น Supabase เรียบร้อย!`);
+    }
+
+    // ============================================================================
+    // 7. ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนนดิบและช่องสรุป
     // ============================================================================
     function openUnitConfigModal() {
       const u = getActiveUnit();
@@ -1009,7 +1814,7 @@
     }
 
     // ============================================================================
-    // ระบบสร้างและพิมพ์บัตร QR Code ประจำตัวนักเรียน (แก้ไขเป็นรหัส ASCII สแกนติด 100%)
+    // 8. ระบบสร้างและพิมพ์สติกเกอร์ QR Code ประจำตัวนักเรียน (ASCII สากล สแกนติด 100%)
     // ============================================================================
     function openQrPrintModal() {
       document.getElementById('qrRoomFilter').value = state.currentRoom;
@@ -1018,15 +1823,12 @@
       renderQrPreview();
     }
 
-    // แปลงชื่อห้อง + รหัสนักเรียน เป็นรหัส ASCII ล้วน เช่น "P6-1:6101"
     function buildAsciiQrPayload(roomName, stuCode) {
       const asciiRoom = ROOM_TO_ASCII[roomName] || 'P6-1';
-      // ตัดอักขระพิเศษหรือภาษาไทยออกจากรหัสนักเรียนหากมี เพื่อให้เป็น ASCII 100%
       const safeCode = encodeURIComponent(String(stuCode || '').trim());
       return `${asciiRoom}:${safeCode}`;
     }
 
-    // สร้างภาพ QR Code ความคมชัดสูง พร้อมขอบขาว Quiet Zone (padding: 16)
     function createQrDataUrl(asciiText) {
       try {
         const qr = new QRious({
@@ -1063,11 +1865,8 @@
       const subjectLabel = getSubjectLabelForQr(subjectTag);
 
       let gridClass = 'grid-cols-3 gap-3.5';
-      if (cardSize === 'sm') {
-        gridClass = 'grid-cols-4 gap-2.5';
-      } else if (cardSize === 'lg') {
-        gridClass = 'grid-cols-2 gap-4';
-      }
+      if (cardSize === 'sm') gridClass = 'grid-cols-4 gap-2.5';
+      else if (cardSize === 'lg') gridClass = 'grid-cols-2 gap-4';
 
       const sectionsHtml = roomsToRender.map((roomName, roomIdx) => {
         const list = (state.students[roomName] || [])
@@ -1120,7 +1919,6 @@
             `;
           }
 
-          // ขนาดกลาง (แนะนำสำหรับติดหน้าปกสมุด)
           return `
             <div class="qr-card-item border border-dashed border-slate-400 rounded-2xl p-3 flex flex-col items-center text-center bg-white">
               <div class="w-full flex justify-between items-center text-[11px] font-bold mb-1">
@@ -1154,274 +1952,12 @@
     }
 
     function renderQrPreview() {
-      const html = buildQrSheetsHtml();
-      document.getElementById('qrPreviewContainer').innerHTML = html;
+      document.getElementById('qrPreviewContainer').innerHTML = buildQrSheetsHtml();
     }
 
     function triggerPrintQr() {
-      const html = buildQrSheetsHtml();
-      const printArea = document.getElementById('printSheetArea');
-      printArea.innerHTML = html;
-      setTimeout(() => {
-        window.print();
-      }, 150);
-    }
-
-    // ============================================================================
-    // ระบบสแกน QR Code (รองรับทั้ง P6-1:6101, ป.6-1|6101 และรหัสนักเรียนล้วน)
-    // ============================================================================
-    function openScanModal() {
-      const sub = getActiveSub();
-      const u = getActiveUnit();
-      document.getElementById('scanSubTitle').textContent = `${sub.name} • ห้องปัจจุบัน: ${state.currentRoom} (${u.name})`;
-
-      const sel = document.getElementById('scanTaskSelect');
-      sel.innerHTML = u.tasks.map(t => `<option value="${t.id}" data-max="${t.max}">${t.name} (เต็ม ${t.max})</option>`).join('');
-      if (u.tasks[0]) document.getElementById('scanDefaultScore').value = u.tasks[0].max;
-      sel.onchange = () => {
-        const opt = sel.options[sel.selectedIndex];
-        document.getElementById('scanDefaultScore').value = opt.getAttribute('data-max');
-      };
-
-      document.getElementById('crossRoomAlert').classList.add('hidden');
-      openModal('scanModal');
-      startScannerCamera();
-    }
-
-    async function startScannerCamera() {
-      const overlay = document.getElementById('cameraStatusOverlay');
-      overlay.classList.remove('hidden');
-      overlay.textContent = 'กำลังเปิดกล้องสแกน QR Code...';
-
-      if (html5QrScanner && isScannerRunning) {
-        try {
-          await html5QrScanner.stop();
-          isScannerRunning = false;
-        } catch (e) {}
-      }
-
-      try {
-        html5QrScanner = new Html5Qrcode('qrReader');
-        await html5QrScanner.start(
-          { facingMode: 'environment' },
-          {
-            fps: 15,
-            qrbox: { width: 230, height: 230 },
-            aspectRatio: 1.0
-          },
-          (decodedText) => {
-            const now = Date.now();
-            // ป้องกันการสแกนซ้ำรหัสเดิมติดกันภายใน 1.8 วินาที
-            if (decodedText === lastScannedCode && (now - lastScannedTime) < 1800) {
-              return;
-            }
-            lastScannedCode = decodedText;
-            lastScannedTime = now;
-            handleScanCode(decodedText);
-          },
-          () => {}
-        );
-        isScannerRunning = true;
-        overlay.classList.add('hidden');
-      } catch (err) {
-        overlay.classList.remove('hidden');
-        overlay.textContent = '⚠️ ไม่สามารถเปิดกล้องอัตโนมัติได้ (กรุณาอนุญาตการใช้กล้อง หรือใช้ปุ่มสแกนจากรูปถ่าย / พิมพ์รหัสนักเรียนด้านล่าง)';
-      }
-    }
-
-    function restartScannerCamera() {
-      lastScannedCode = '';
-      startScannerCamera();
-    }
-
-    async function scanQrFromImageFile(inputEl) {
-      if (!inputEl.files || inputEl.files.length === 0) return;
-      const file = inputEl.files[0];
-      try {
-        if (!html5QrScanner) {
-          html5QrScanner = new Html5Qrcode('qrReader');
-        }
-        if (isScannerRunning) {
-          await html5QrScanner.stop();
-          isScannerRunning = false;
-        }
-        const decodedText = await html5QrScanner.scanFile(file, true);
-        handleScanCode(decodedText);
-      } catch (err) {
-        playScanBeep(false);
-        const fb = document.getElementById('scanFeedback');
-        fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-rose-100 text-rose-700';
-        fb.textContent = '❌ ไม่พบ QR Code ในรูปภาพที่เลือก กรุณาลองถ่ายให้ชัดขึ้นครับ';
-      }
-      inputEl.value = '';
-    }
-
-    async function closeScanModal() {
-      if (html5QrScanner && isScannerRunning) {
-        try {
-          await html5QrScanner.stop();
-          isScannerRunning = false;
-        } catch (e) {}
-      }
-      closeModal('scanModal');
-    }
-
-    // ค้นหานักเรียนจากรหัสที่สแกน (รองรับทั้ง P6-1:6101, ป.6-1|6101 และ 6101)
-    function findStudentAcrossRooms(rawInput) {
-      const clean = String(rawInput || '').trim();
-      if (!clean) return null;
-
-      // 1. กรณีรหัส QR มาตรฐานใหม่ "P6-1:6101"
-      if (clean.includes(':')) {
-        const parts = clean.split(':');
-        const asciiPrefix = parts[0].trim().toUpperCase();
-        const rawCode = decodeURIComponent(parts.slice(1).join(':').trim());
-        const mappedRoom = ASCII_TO_ROOM[asciiPrefix] || asciiPrefix;
-
-        if (state.students[mappedRoom]) {
-          const foundInRoom = state.students[mappedRoom].find(s => String(s.code).trim() === rawCode);
-          if (foundInRoom) return { room: mappedRoom, student: foundInRoom };
-        }
-      }
-
-      // 2. กรณีรหัสแบบคั่นด้วย | เช่น "ป.6-1|6101"
-      if (clean.includes('|')) {
-        const parts = clean.split('|');
-        const qrRoom = parts[0].trim();
-        const qrCode = parts[1].trim();
-        if (state.students[qrRoom]) {
-          const foundInRoom = state.students[qrRoom].find(s => String(s.code).trim() === qrCode);
-          if (foundInRoom) return { room: qrRoom, student: foundInRoom };
-        }
-      }
-
-      // 3. กรณีพิมพ์รหัสนักเรียนโดยตรง เช่น "6101" (ค้นหาห้องปัจจุบันก่อน แล้วค่อยค้นหาห้องอื่น)
-      const currentRoomList = state.students[state.currentRoom] || [];
-      const foundCurrent = currentRoomList.find(s => String(s.code).trim() === clean);
-      if (foundCurrent) {
-        return { room: state.currentRoom, student: foundCurrent };
-      }
-
-      for (const r of ROOM_LIST) {
-        const found = (state.students[r] || []).find(s => String(s.code).trim() === clean);
-        if (found) return { room: r, student: found };
-      }
-      return null;
-    }
-
-    function handleScanCode(rawCode) {
-      const code = String(rawCode || '').trim();
-      if (!code) return;
-
-      const found = findStudentAcrossRooms(code);
-      const fb = document.getElementById('scanFeedback');
-      const alertBox = document.getElementById('crossRoomAlert');
-      alertBox.classList.add('hidden');
-
-      if (!found) {
-        playScanBeep(false);
-        fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-rose-100 text-rose-700';
-        fb.textContent = `❌ ไม่พบรหัสนักเรียนจากค่า "${code}" ในแท็บ ป.6-1 ถึง ป.6-3`;
-        return;
-      }
-
-      const taskId = document.getElementById('scanTaskSelect').value;
-      const unit = getActiveUnit();
-      const task = unit.tasks.find(t => t.id === taskId);
-      const score = Math.min(task.max, Math.max(0, Math.round(Number(document.getElementById('scanDefaultScore').value) || 0)));
-
-      // กรณีสแกนเจอเด็กคนละห้อง
-      if (found.room !== state.currentRoom) {
-        const mode = document.getElementById('crossRoomMode').value;
-        if (mode === 'block') {
-          playScanBeep(false);
-          fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-rose-100 text-rose-700';
-          fb.textContent = `🚫 บล็อกการลงคะแนน: ${found.student.name} อยู่ห้อง ${found.room} (กำลังเปิด ${state.currentRoom})`;
-          return;
-        }
-        if (mode === 'auto') {
-          playScanBeep(true);
-          updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
-          fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-emerald-100 text-emerald-800';
-          fb.textContent = `⚡ บันทึกข้ามห้องอัตโนมัติ: ${found.student.name} (${found.room}) ได้ ${score} คะแนน`;
-          return;
-        }
-
-        playScanBeep(false);
-        document.getElementById('crossRoomMsg').textContent =
-          `⚠️ สแกนพบนักเรียนคนละห้อง! "${found.student.name}" (รหัส ${found.student.code}) อยู่ห้อง ${found.room} แต่หน้าจอปัจจุบันเปิดห้อง ${state.currentRoom} ต้องการบันทึก ${score} คะแนนหรือไม่?`;
-        alertBox.classList.remove('hidden');
-
-        document.getElementById('btnCrossSaveKeep').onclick = () => {
-          playScanBeep(true);
-          updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
-          alertBox.classList.add('hidden');
-          fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-emerald-100 text-emerald-800';
-          fb.textContent = `✅ บันทึกลงห้อง ${found.room} ให้ ${found.student.name} (${score} คะแนน) เรียบร้อย`;
-        };
-        document.getElementById('btnCrossSwitchRoom').onclick = () => {
-          playScanBeep(true);
-          state.currentRoom = found.room;
-          updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
-          alertBox.classList.add('hidden');
-          renderAll();
-          fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-indigo-100 text-indigo-800';
-          fb.textContent = `🔄 สลับไปห้อง ${found.room} และบันทึก ${score} คะแนนให้ ${found.student.name} แล้ว`;
-        };
-        return;
-      }
-
-      // กรณีตรงห้องปกติ
-      playScanBeep(true);
-      updateScore(found.room, found.student.code, unit.id, task.id, score, task.max);
-      fb.className = 'text-xs font-semibold text-center py-2.5 px-3 rounded-2xl bg-emerald-100 text-emerald-800';
-      fb.textContent = `✅ บันทึก ${score} คะแนน ให้ ${found.student.name} (เลขที่ ${found.student.no} • ${found.room}) เรียบร้อย!`;
-      document.getElementById('manualScanInput').value = '';
-    }
-
-    // ============================================================================
-    // ระบบซิงค์และดึงข้อมูลจาก Google Sheet DB
-    // ============================================================================
-    async function syncToSheet() {
-      setSyncStatus('syncing', 'กำลังซิงค์ขึ้น Sheet DB...');
-      try {
-        await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'save', payload: state })
-        });
-        setSyncStatus('synced');
-      } catch (e) {
-        setSyncStatus('error', 'ซิงค์ไม่สำเร็จ (แตะเพื่อลองใหม่)');
-      }
-    }
-
-    async function loadFromSheet(silent = false) {
-      setSyncStatus('loading', 'กำลังดึงข้อมูลจาก Sheet DB...');
-      try {
-        const res = await fetch(GAS_WEB_APP_URL + '?action=load');
-        const json = await res.json();
-        if (json && json.status === 'ok') {
-          if (json.data) state = json.data;
-          if (json.students) state.students = json.students;
-          normalizeState();
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          renderAll();
-          setSyncStatus('synced');
-          if (!silent) {
-            const countAll = ROOM_LIST.reduce((acc, r) => acc + (state.students[r] ? state.students[r].length : 0), 0);
-            alert(`ดึงข้อมูลและรายชื่อนักเรียนทั้ง 3 ห้อง (รวม ${countAll} คน) จาก Google Sheet สำเร็จ!`);
-          }
-        } else {
-          await syncToSheet();
-        }
-      } catch (err) {
-        setSyncStatus('error', 'เชื่อมต่อ DB ไม่สำเร็จ (แตะเพื่อซิงค์)');
-        if (!silent) {
-          alert('ไม่สามารถดึงข้อมูลจาก Google Sheet ได้ กรุณาตรวจสอบว่า Deploy Web App ตั้งสิทธิ์เป็น Anyone (ทุกคน) แล้ว');
-        }
-      }
+      document.getElementById('printSheetArea').innerHTML = buildQrSheetsHtml();
+      setTimeout(() => { window.print(); }, 150);
     }
 
     function openModal(id) {
