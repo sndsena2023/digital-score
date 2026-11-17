@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="P.6 SmartScore" />
   <link id="pwaManifestLink" rel="manifest" href="manifest.json" />
-  <title>P.6 SmartScore ⚡ ระบบบันทึกคะแนนและตัดเกรดชั้น ป.6</title>
+  <title>P.6 SmartScore ⚡ ระบบบันทึกคะแนนและติดตามงานค้าง ชั้น ป.6</title>
 
   <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -122,30 +122,30 @@
         <!-- Brand Logo -->
         <div class="flex items-center gap-3">
           <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center font-extrabold leading-none shadow-md border-2 border-emerald-400">
-            <span class="text-[9px] text-emerald-300 tracking-wider">SUPA</span>
+            <span class="text-[9px] text-emerald-300 tracking-wider">KIDS</span>
             <span class="text-base">P.6</span>
           </div>
           <div>
             <div class="flex flex-wrap items-center gap-2">
               <h1 class="font-bold text-lg text-slate-900 tracking-tight">P.6 SmartScore</h1>
               <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
-                ⚡ Real-time • ตัดเกรดอัตโนมัติ • PWA
+                ⚡ แยกตารางรายบุคคล • เช็กงานค้าง • ตัดเกรด
               </span>
             </div>
             <p class="text-xs text-slate-500">
-              ฐานข้อมูลรายชื่อกลาง <b class="text-slate-700">ป.6-1 • ป.6-2 • ป.6-3</b> (สังคมศึกษา • ประวัติศาสตร์ • การงานอาชีพ)
+              ระบบจัดการคะแนนระดับประถมศึกษา <b class="text-slate-700">ป.6-1 • ป.6-2 • ป.6-3</b> (สังคมศึกษา • ประวัติศาสตร์ • การงานอาชีพ)
             </p>
           </div>
         </div>
 
         <!-- Status Badge & Action Buttons -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- ป้ายสถานะการซิงค์ Supabase Real-time -->
-          <div onclick="handleSyncBadgeClick()" id="syncBadge" title="คลิกเพื่อซิงค์ข้อมูลกับ Supabase ทันที"
+          <!-- ป้ายสถานะการซิงค์ Supabase รายบุคคล -->
+          <div onclick="syncAllToSupabase()" id="syncBadge" title="คลิกเพื่อซิงค์ข้อมูลทั้งหมดกับ Supabase ทันที"
             class="cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-semibold transition hover:scale-[1.02]">
             <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span id="syncSpinner" class="hidden w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            <span id="syncText">กำลังเชื่อมต่อ Supabase...</span>
+            <span id="syncText">กำลังเชื่อมต่อ DB รายบุคคล...</span>
           </div>
 
           <!-- ปุ่มติดตั้งแอป PWA -->
@@ -159,14 +159,14 @@
           <button onclick="openExportModal()"
             class="text-xs px-3.5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm flex items-center gap-1.5 transition active:scale-95">
             <span>📊</span>
-            <span>ส่งออก Excel (.csv)</span>
+            <span>ส่งออก Excel</span>
           </button>
 
           <!-- ปุ่มพิมพ์สติกเกอร์ QR -->
           <button onclick="openQrPrintModal()"
             class="text-xs px-3.5 py-2 rounded-2xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-medium shadow-sm flex items-center gap-1.5 transition active:scale-95">
             <span>🏷️</span>
-            <span>พิมพ์สติกเกอร์ QR</span>
+            <span>พิมพ์ป้าย QR</span>
           </button>
 
           <!-- ปุ่มสแกน QR ลงคะแนน -->
@@ -182,15 +182,15 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 mt-6 space-y-5">
 
-      <!-- แถบแจ้งเตือนอัตโนมัติหากยังไม่ได้รันคำสั่ง SQL สร้างตารางใน Supabase ครั้งแรก -->
+      <!-- แถบแจ้งเตือนอัตโนมัติหากยังไม่ได้รันคำสั่ง SQL สร้าง 3 ตารางรายบุคคลใน Supabase -->
       <div id="sqlSetupBanner" class="hidden p-4 rounded-3xl bg-amber-50 border-2 border-amber-400 text-xs space-y-2 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="font-bold text-amber-950 text-sm flex items-center gap-2">
             <span>⚠️</span>
-            <span>ตรวจพบว่าโปรเจกต์ Supabase นี้ยังไม่ได้สร้างตาราง <code>p6_smartscore_db</code> สำหรับเก็บข้อมูลครั้งแรก</span>
+            <span>ยังไม่ได้สร้าง 3 ตารางแยกเก็บรายบุคคล (<code>p6_students</code>, <code>p6_subject_configs</code>, <code>p6_student_scores</code>) ใน Supabase</span>
           </div>
           <button onclick="copySqlScript()" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm">
-            📋 คัดลอกคำสั่ง SQL ไปรันใน Supabase
+            📋 คัดลอกคำสั่ง SQL (3 ตาราง) ไปรันใน Supabase
           </button>
         </div>
         <p class="text-amber-800">
@@ -205,20 +205,26 @@
         <button onclick="selectSubject('occ')" id="sub_occ" class="p-4 rounded-3xl text-left transition-all duration-200 flex items-center justify-between"></button>
       </div>
 
-      <!-- 2. แถบสลับโหมด: [บันทึกคะแนนรายหน่วย] vs [สรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ] -->
+      <!-- 2. แถบสลับโหมด 3 มุมมอง: [1. บันทึกคะแนนรายหน่วย] | [2. ตรวจสอบงานค้าง] | [3. สรุปรวมทุกหน่วย & ตัดเกรด] -->
       <div class="bento-card p-4 rounded-3xl space-y-3.5">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
-          <!-- สลับมุมมองตาราง -->
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <!-- สลับมุมมองหลัก 3 โหมด -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
             <button onclick="setViewMode('unit')" id="viewBtn_unit"
-              class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+              class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
               <span>📝</span>
               <span>บันทึกคะแนนรายหน่วย</span>
             </button>
+            <button onclick="setViewMode('missing')" id="viewBtn_missing"
+              class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+              <span>📋</span>
+              <span>ตรวจสอบงานค้าง</span>
+              <span id="missingCountBadgeTop" class="px-2 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-extrabold">0</span>
+            </button>
             <button onclick="setViewMode('summary')" id="viewBtn_summary"
-              class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+              class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
               <span>🏆</span>
-              <span>สรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ</span>
+              <span>สรุปรวมทุกหน่วย & ตัดเกรด</span>
             </button>
           </div>
 
@@ -231,13 +237,13 @@
             </div>
 
             <button onclick="openStudentManagerModal()" class="text-xs px-3.5 py-2 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-semibold shadow-sm transition flex items-center gap-1">
-              <span>📥</span>
-              <span>นำเข้า / จัดการรายชื่อ 3 ห้อง</span>
+              <span>👥</span>
+              <span>รายชื่อ 3 ห้อง</span>
             </button>
           </div>
         </div>
 
-        <!-- แถบเครื่องมือย่อยสำหรับโหมด "บันทึกคะแนนรายหน่วย" -->
+        <!-- แถบเครื่องมือย่อยโหมดที่ 1: "บันทึกคะแนนรายหน่วย" -->
         <div id="unitToolbarRow" class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-xs font-semibold text-slate-500">เลือกหน่วยการเรียนรู้:</span>
@@ -257,7 +263,69 @@
           </div>
         </div>
 
-        <!-- แถบเครื่องมือย่อยสำหรับโหมด "สรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ" -->
+        <!-- แถบเครื่องมือย่อยโหมดที่ 2: "ตรวจสอบงานค้าง (ติดตามการส่งงานเด็กประถม)" -->
+        <div id="missingToolbarRow" class="hidden flex-col gap-3 pt-1">
+          <!-- การ์ดสรุปภาพรวมการส่งงานของห้องปัจจุบัน -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-3.5 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex items-center justify-between">
+              <div>
+                <div class="text-xs text-emerald-700 font-semibold">🌟 ส่งงานครบทุกชิ้นแล้ว</div>
+                <div id="missingStatComplete" class="text-xl font-extrabold text-emerald-900 mt-0.5">0 คน</div>
+              </div>
+              <span class="text-2xl">🎉</span>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-rose-50/90 border border-rose-200 flex items-center justify-between">
+              <div>
+                <div class="text-xs text-rose-700 font-semibold">⏳ นักเรียนที่ยังมีงานค้าง</div>
+                <div id="missingStatStudents" class="text-xl font-extrabold text-rose-900 mt-0.5">0 คน</div>
+              </div>
+              <span class="text-2xl">📝</span>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 flex items-center justify-between">
+              <div>
+                <div class="text-xs text-amber-800 font-semibold">📌 จำนวนชิ้นงานค้างรวมทั้งห้อง</div>
+                <div id="missingStatTotalItems" class="text-xl font-extrabold text-amber-900 mt-0.5">0 ชิ้น</div>
+              </div>
+              <span class="text-2xl">📂</span>
+            </div>
+          </div>
+
+          <!-- ตัวกรองหน้าตรวจสอบงานค้าง + ปุ่มพิมพ์ใบตามงานแจกเด็ก -->
+          <div class="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-2xl border border-slate-200">
+                <span class="font-bold text-slate-600">แสดง:</span>
+                <select id="missingFilterStatus" onchange="renderTable()" class="bg-white border border-slate-300 rounded-xl px-2.5 py-1 font-semibold text-slate-800">
+                  <option value="missing_only">เฉพาะนักเรียนที่มีงานค้าง</option>
+                  <option value="all">แสดงนักเรียนทุกคนในห้อง</option>
+                  <option value="complete_only">เฉพาะคนที่ส่งครบ 100%</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-2xl border border-slate-200">
+                <span class="font-bold text-slate-600">ขอบเขตหน่วย:</span>
+                <select id="missingFilterUnit" onchange="renderTable()" class="bg-white border border-slate-300 rounded-xl px-2.5 py-1 font-semibold text-slate-800">
+                  <option value="all">รวมทุกหน่วยการเรียนรู้</option>
+                </select>
+              </div>
+
+              <label class="flex items-center gap-1.5 bg-rose-50 px-3 py-1.5 rounded-2xl border border-rose-200 text-rose-900 font-semibold cursor-pointer">
+                <input id="missingIncludeZero" type="checkbox" onchange="renderTable()" class="rounded text-rose-600" />
+                <span>นับคนที่ได้ 0 คะแนนเป็นงานค้างด้วย</span>
+              </label>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="printMissingWorkSlips()"
+                class="px-4 py-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm flex items-center gap-1.5 transition active:scale-95">
+                <span>🖨️</span>
+                <span>พิมพ์ใบแจ้งงานค้างรายบุคคล (แจกนักเรียน)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- แถบเครื่องมือย่อยโหมดที่ 3: "สรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ" -->
         <div id="summaryToolbarRow" class="hidden flex-wrap items-center justify-between gap-3 pt-1">
           <div class="flex flex-wrap items-center gap-3 text-xs">
             <div class="flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-2xl border border-indigo-200">
@@ -282,7 +350,7 @@
         </div>
       </div>
 
-      <!-- 3. ตารางแสดงผล (สลับระหว่างตารางรายหน่วย และ ตารางสรุปทุกหน่วย+ตัดเกรด) -->
+      <!-- 3. ตารางแสดงผลหลัก -->
       <div class="bento-card rounded-3xl overflow-hidden">
         <div class="px-5 py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-2">
@@ -290,9 +358,10 @@
             <span id="tableBannerTitle" class="font-bold text-sm">สังคมศึกษา ป.6 • ห้อง ป.6-1</span>
             <span id="tableBannerUnit" class="px-2.5 py-0.5 rounded-full bg-white/15 text-indigo-200 font-medium">หน่วยที่ 1</span>
           </div>
-          <div class="flex items-center gap-3">
-            <button onclick="exportCurrentTableQuick()" class="px-2.5 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-semibold transition">
-              📥 ดาวน์โหลดตารางหน้านี้ (.csv)
+          <div class="flex items-center gap-2">
+            <span class="hidden sm:inline text-slate-300 text-[11px]">💡 บันทึกแยกเป็นรายบุคคลลงตาราง <code>p6_student_scores</code> อัตโนมัติ</span>
+            <button onclick="exportCurrentTableQuick()" class="px-3 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-semibold transition">
+              📥 ดาวน์โหลดหน้านี้ (.csv)
             </button>
           </div>
         </div>
@@ -307,7 +376,49 @@
     </main>
 
     <!-- =================================================================== -->
-    <!-- Modal 0: ส่งออกคะแนนเป็นไฟล์ Excel (.csv รองรับภาษาไทย 100%) -->
+    <!-- Modal พิเศษ: กรอกคะแนนตามส่งงานด่วนจากหน้า "ตรวจสอบงานค้าง" -->
+    <!-- =================================================================== -->
+    <div id="quickGradeMissingModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 border-2 border-slate-900 shadow-2xl text-xs">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base">✅</span>
+            <div>
+              <h3 class="font-bold text-base text-slate-900">บันทึกคะแนนส่งงานย้อนหลัง</h3>
+              <p id="qgStuInfo" class="text-[11px] text-slate-500"></p>
+            </div>
+          </div>
+          <button onclick="closeModal('quickGradeMissingModal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-1">
+          <div id="qgUnitLabel" class="text-[11px] font-bold text-indigo-600"></div>
+          <div id="qgTaskName" class="text-sm font-extrabold text-slate-900"></div>
+          <div id="qgMaxLabel" class="text-xs text-slate-600"></div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="font-bold text-slate-700 block text-center">ระบุคะแนนที่นักเรียนทำได้ (จำนวนเต็ม)</label>
+          <div class="flex items-center justify-center gap-3">
+            <button type="button" onclick="adjustQuickMissingScore(-1)" class="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-lg font-extrabold">−</button>
+            <input id="qgScoreInput" type="number" step="1" min="0"
+              class="w-24 text-center text-2xl font-extrabold text-emerald-700 bg-white border-2 border-emerald-400 rounded-2xl py-1.5 focus:outline-none" />
+            <button type="button" onclick="adjustQuickMissingScore(1)" class="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-lg font-extrabold">+</button>
+          </div>
+          <div id="qgPresetBtns" class="flex flex-wrap justify-center gap-1.5 pt-1"></div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-200">
+          <button onclick="closeModal('quickGradeMissingModal')" class="px-4 py-2 rounded-2xl border border-slate-300 font-medium">ยกเลิก</button>
+          <button onclick="confirmQuickMissingGrade()" class="px-5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm">
+            💾 บันทึกการส่งงาน
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Modal 0: ส่งออกคะแนนและรายงานงานค้างเป็นไฟล์ Excel (.csv) -->
     <!-- =================================================================== -->
     <div id="exportModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
       <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border-2 border-slate-900 shadow-2xl text-xs">
@@ -315,7 +426,7 @@
           <div class="flex items-center gap-2.5">
             <span class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">📊</span>
             <div>
-              <h3 class="font-bold text-base text-slate-900">ส่งออกตารางคะแนนเป็นไฟล์ Excel (.csv)</h3>
+              <h3 class="font-bold text-base text-slate-900">ส่งออกตารางคะแนนและงานค้างเป็น Excel (.csv)</h3>
               <p class="text-[11px] text-slate-500">เข้ารหัสภาษาไทยมาตรฐาน (UTF-8 BOM) เปิดใน Microsoft Excel ได้ทันที</p>
             </div>
           </div>
@@ -329,25 +440,34 @@
               <div class="font-bold text-sm text-slate-900">1. ส่งออกคะแนนรายหน่วย (เฉพาะห้องที่เปิดอยู่)</div>
               <p class="text-[11px] text-slate-500">รวมคะแนนดิบทุกชิ้นงาน และคะแนนเฉลี่ยสรุปของหน่วยปัจจุบัน</p>
             </div>
-            <span class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold">ดาวน์โหลด</span>
+            <span class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold shrink-0">ดาวน์โหลด</span>
+          </button>
+
+          <button onclick="exportMissingWorkCsv()"
+            class="w-full p-3.5 rounded-2xl border-2 border-rose-200 hover:border-rose-500 bg-rose-50/50 hover:bg-rose-50 text-left transition flex items-center justify-between">
+            <div>
+              <div class="font-bold text-sm text-rose-950">2. ส่งออกรายงานตรวจสอบงานค้าง (เฉพาะห้องที่เปิดอยู่)</div>
+              <p class="text-[11px] text-rose-700">สรุปจำนวนงานที่ส่งแล้ว จำนวนงานค้าง และรายชื่อชิ้นงานที่ค้างของแต่ละคน</p>
+            </div>
+            <span class="px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold shrink-0">ดาวน์โหลด</span>
           </button>
 
           <button onclick="exportSummaryGradeCsv(false)"
             class="w-full p-3.5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/50 text-left transition flex items-center justify-between">
             <div>
-              <div class="font-bold text-sm text-slate-900">2. ส่งออกสรุปรวมทุกหน่วย & ตัดเกรด (เฉพาะห้องที่เปิดอยู่)</div>
+              <div class="font-bold text-sm text-slate-900">3. ส่งออกสรุปรวมทุกหน่วย & ตัดเกรด (เฉพาะห้องที่เปิดอยู่)</div>
               <p class="text-[11px] text-slate-500">รวมคะแนนทุกหน่วย + คะแนนสอบ + ร้อยละ + เกรด (4, 3.5, 3...)</p>
             </div>
-            <span class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold">ดาวน์โหลด</span>
+            <span class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold shrink-0">ดาวน์โหลด</span>
           </button>
 
           <button onclick="exportSummaryGradeCsv(true)"
             class="w-full p-3.5 rounded-2xl border-2 border-slate-900 bg-amber-50/80 hover:bg-amber-100/80 text-left transition flex items-center justify-between">
             <div>
-              <div class="font-bold text-sm text-slate-900">3. ส่งออกสรุปรวมทุกหน่วย & ตัดเกรด (ครบทั้ง 3 ห้อง ป.6-1 ถึง ป.6-3)</div>
+              <div class="font-bold text-sm text-slate-900">4. ส่งออกสรุปรวมทุกหน่วย & ตัดเกรด (ครบทั้ง 3 ห้อง ป.6-1 ถึง ป.6-3)</div>
               <p class="text-[11px] text-slate-700">รวมนักเรียนทั้งระดับชั้นของวิชานี้ไว้ในไฟล์ Excel เดียวกัน</p>
             </div>
-            <span class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold">ดาวน์โหลด 3 ห้อง</span>
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold shrink-0">ดาวน์โหลด 3 ห้อง</span>
           </button>
         </div>
 
@@ -366,7 +486,7 @@
           <div class="flex items-center gap-2.5">
             <span class="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">📷</span>
             <div>
-              <h3 class="font-bold text-base text-slate-900">สแกน QR ลงคะแนนรายวิชา</h3>
+              <h3 class="font-bold text-base text-slate-900">สแกน QR ลงคะแนนรายบุคคล</h3>
               <p class="text-[11px] text-slate-500">1. สแกน QR นักเรียน → 2. เลือกช่องคะแนน & กรอกคะแนน → 3. กดบันทึก</p>
             </div>
           </div>
@@ -427,6 +547,7 @@
                 <div class="flex flex-wrap items-center gap-1.5">
                   <span id="scannedStuRoomBadge" class="px-2 py-0.5 rounded-lg bg-indigo-600 text-white text-[11px] font-bold">ป.6-1</span>
                   <span id="scannedStuCodeBadge" class="px-2 py-0.5 rounded-lg bg-slate-200 text-slate-700 text-[11px] font-mono font-semibold">รหัส 6101</span>
+                  <span id="scannedStuMissingBadge" class="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold"></span>
                 </div>
                 <div id="scannedStuName" class="font-bold text-base text-slate-900 mt-1">ด.ช.ธนกฤต รักเรียน</div>
               </div>
@@ -453,7 +574,7 @@
           </div>
 
           <div class="space-y-1.5 text-xs">
-            <label class="font-bold text-slate-700 block">1. เลือกช่องเก็บคะแนนดิบ (ชิ้นงาน/ใบงาน)</label>
+            <label class="font-bold text-slate-700 block">1. เลือกช่องเก็บคะแนนดิบ (แสดงสถานะงานที่ยังไม่ส่งชัดเจน)</label>
             <div id="scanStep2TaskGrid" class="grid grid-cols-1 gap-2 max-h-44 overflow-y-auto pr-1"></div>
           </div>
 
@@ -493,16 +614,16 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- Modal 2: นำเข้าและจัดการรายชื่อนักเรียนทั้ง 3 ห้อง (ป.6-1, ป.6-2, ป.6-3) -->
+    <!-- Modal 2: นำเข้าและจัดการรายชื่อนักเรียนทั้ง 3 ห้อง (บันทึกลง p6_students รายคน) -->
     <!-- =================================================================== -->
     <div id="studentManagerModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
       <div class="bg-white rounded-3xl max-w-xl w-full p-6 space-y-4 max-h-[92vh] overflow-y-auto border-2 border-slate-900 shadow-2xl text-xs">
         <div class="flex justify-between items-center border-b border-slate-200 pb-3">
           <div class="flex items-center gap-2.5">
-            <span class="w-9 h-9 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg">📥</span>
+            <span class="w-9 h-9 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg">👥</span>
             <div>
-              <h3 class="font-bold text-base text-slate-900">นำเข้าและจัดการรายชื่อนักเรียนกลาง (3 ห้องเรียน)</h3>
-              <p class="text-[11px] text-slate-500">นำเข้าครั้งเดียว ใช้ร่วมกันทั้งวิชาสังคมศึกษา ประวัติศาสตร์ และการงานอาชีพ</p>
+              <h3 class="font-bold text-base text-slate-900">จัดการรายชื่อนักเรียนรายบุคคล (ตาราง <code>p6_students</code>)</h3>
+              <p class="text-[11px] text-slate-500">นักเรียนแต่ละคนถูกแยกเก็บเป็น 1 แถวอิสระในฐานข้อมูล ใช้ร่วมกันทั้ง 3 รายวิชา</p>
             </div>
           </div>
           <button onclick="closeModal('studentManagerModal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
@@ -510,8 +631,8 @@
 
         <div class="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div class="font-bold text-sky-950">วิธีที่ 1: ดึงรายชื่อทั้ง 3 ห้องจาก Google Sheet เดิมอัตโนมัติ</div>
-            <p class="text-[11px] text-sky-700">ดึงข้อมูลจากแท็บ ป.6-1, ป.6-2, ป.6-3 ใน Sheet เดิมของคุณครูเข้า Supabase ทันที</p>
+            <div class="font-bold text-sky-950">วิธีที่ 1: ดึงรายชื่อทั้ง 3 ห้องจาก Google Sheet เดิมเข้าตารางรายบุคคล</div>
+            <p class="text-[11px] text-sky-700">ดึงข้อมูลจากแท็บ ป.6-1, ป.6-2, ป.6-3 แล้วแยกบันทึกรายคนลงตาราง <code>p6_students</code></p>
           </div>
           <button onclick="importFromLegacySheetToSupabase()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sm shrink-0">
             🔄 ดึงรายชื่อจาก Sheet เดิม
@@ -538,13 +659,12 @@
           <textarea id="mgrStudentTextarea" rows="9"
             class="w-full border border-slate-300 rounded-2xl p-3 font-mono text-xs focus:outline-none focus:border-indigo-500"
             placeholder="1	6101	ด.ช.ธนกฤต รักเรียน&#10;2	6102	ด.ญ.กัญญาณี มีสุข"></textarea>
-          <p class="text-[11px] text-slate-400 mt-1">💡 สามารถคลุมดำ 3 คอลัมน์จากโปรแกรม Excel แล้วกดวาง (Ctrl+V) ในช่องนี้ได้เลยครับ</p>
         </div>
 
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
           <button onclick="closeModal('studentManagerModal')" class="px-4 py-2 rounded-2xl border border-slate-300 font-medium">ปิดหน้าต่าง</button>
           <button onclick="saveManagedStudents()" class="px-5 py-2 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-bold shadow-sm">
-            💾 บันทึกรายชื่อห้องนี้ขึ้น Supabase
+            💾 บันทึกรายชื่อรายคนขึ้น Supabase
           </button>
         </div>
       </div>
@@ -560,7 +680,7 @@
             <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">⚙️</span>
             <div>
               <h3 class="font-bold text-base text-slate-900">ตั้งค่าหน่วย & กำหนดจำนวนช่องคะแนน</h3>
-              <p class="text-[11px] text-slate-500">ปรับจำนวนช่องคะแนนดิบและช่องคะแนนเฉลี่ยสรุปได้อย่างอิสระ</p>
+              <p class="text-[11px] text-slate-500">บันทึกลงตาราง <code>p6_subject_configs</code> แยกตามรายวิชา</p>
             </div>
           </div>
           <button onclick="closeModal('unitConfigModal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
@@ -689,22 +809,23 @@
 
   </div>
 
-  <!-- พื้นที่สำหรับสั่งพิมพ์ออกกระดาษ A4 เท่านั้น -->
+  <!-- พื้นที่สำหรับสั่งพิมพ์ออกกระดาษ A4 เท่านั้น (ใช้ทั้งพิมพ์ QR และพิมพ์ใบแจ้งงานค้างรายบุคคล) -->
   <div id="printSheetArea" class="hidden"></div>
 
   <script>
     // ============================================================================
-    // 1. ผูก URL และ PUBLISHABLE KEY ของ SUPABASE ถาวร
+    // 1. ผูก URL และ PUBLISHABLE KEY ของ SUPABASE ถาวร (แยก 3 ตารางรายบุคคล)
     // ============================================================================
     const SUPABASE_URL = 'https://fejpderqbifyqchljjnr.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_3dy0MHROoILowx2yMUITiA_EXUFVqAK';
-    const SUPABASE_TABLE = 'p6_smartscore_db';
-    const SUPABASE_ROW_ID = 'main_gradebook_v1';
 
-    // ลิงก์ Google Sheet เดิมสำหรับดึงรายชื่อ ป.6-1, ป.6-2, ป.6-3 เข้า Supabase
+    const TABLE_STUDENTS = 'p6_students';
+    const TABLE_CONFIGS = 'p6_subject_configs';
+    const TABLE_SCORES = 'p6_student_scores';
+
     const LEGACY_GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz8HZH4JoQuOPKrDFKio-S3aA5WHj0jbAk6ZIFzfnaJfKqT846P2Bj1PpBuos8Sa1ak/exec';
 
-    const STORAGE_KEY = 'P6_SMARTSCORE_SUPABASE_STATE_V3';
+    const STORAGE_KEY = 'P6_SMARTSCORE_RELATIONAL_V1';
     const ROOM_LIST = ['ป.6-1', 'ป.6-2', 'ป.6-3'];
 
     const ROOM_TO_ASCII = { 'ป.6-1': 'P6-1', 'ป.6-2': 'P6-2', 'ป.6-3': 'P6-3' };
@@ -713,29 +834,59 @@
       'P61': 'ป.6-1', 'P62': 'ป.6-2', 'P63': 'ป.6-3'
     };
 
-    const SQL_SETUP_SCRIPT = `CREATE TABLE IF NOT EXISTS public.p6_smartscore_db (
-  id TEXT PRIMARY KEY,
-  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    const SQL_SETUP_SCRIPT = `CREATE TABLE IF NOT EXISTS public.p6_students (
+  student_code TEXT PRIMARY KEY,
+  room TEXT NOT NULL,
+  student_no INTEGER NOT NULL,
+  full_name TEXT NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-ALTER TABLE public.p6_smartscore_db ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow public read write p6_smartscore_db" ON public.p6_smartscore_db;
-CREATE POLICY "Allow public read write p6_smartscore_db"
-  ON public.p6_smartscore_db FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
-ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
+CREATE TABLE IF NOT EXISTS public.p6_subject_configs (
+  subject_id TEXT PRIMARY KEY,
+  subject_name TEXT NOT NULL,
+  exam_max INTEGER NOT NULL DEFAULT 20,
+  grade_basis TEXT NOT NULL DEFAULT 'percent',
+  units JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS public.p6_student_scores (
+  record_id TEXT PRIMARY KEY,
+  subject_id TEXT NOT NULL,
+  room TEXT NOT NULL,
+  student_code TEXT NOT NULL,
+  student_no INTEGER NOT NULL,
+  full_name TEXT NOT NULL,
+  task_scores JSONB NOT NULL DEFAULT '{}'::jsonb,
+  exam_score INTEGER,
+  total_score INTEGER NOT NULL DEFAULT 0,
+  percentage INTEGER NOT NULL DEFAULT 0,
+  grade TEXT NOT NULL DEFAULT '0',
+  missing_count INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE public.p6_students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.p6_subject_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.p6_student_scores ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access p6_students" ON public.p6_students;
+CREATE POLICY "Public access p6_students" ON public.p6_students FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access p6_subject_configs" ON public.p6_subject_configs;
+CREATE POLICY "Public access p6_subject_configs" ON public.p6_subject_configs FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public access p6_student_scores" ON public.p6_student_scores;
+CREATE POLICY "Public access p6_student_scores" ON public.p6_student_scores FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_students;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_subject_configs;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_student_scores;`;
 
     let supabaseClient = null;
     let realtimeChannel = null;
-    let clientSessionId = 'client_' + Math.random().toString(36).substring(2, 10);
     let lastHighlightedCellKey = '';
 
     let html5QrScanner = null;
     let isScannerRunning = false;
     let verticalHeader = false;
-    let currentViewMode = 'unit'; // 'unit' | 'summary'
+    let currentViewMode = 'unit'; // 'unit' | 'missing' | 'summary'
     let tempTasks = [];
     let tempSummaryCols = [];
-    let syncTimer = null;
     let manageRoomCurrent = 'ป.6-1';
     let deferredPwaPrompt = null;
 
@@ -745,6 +896,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       subjectId: 'soc',
       unitId: 'u1',
       taskId: 't1'
+    };
+
+    let quickMissingSession = {
+      room: '',
+      stuCode: '',
+      stuName: '',
+      unitId: '',
+      unitName: '',
+      taskId: '',
+      taskName: '',
+      maxScore: 10
     };
 
     const createDefaultUnit = () => ([
@@ -768,7 +930,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       currentSubject: 'soc',
       currentRoom: 'ป.6-1',
       currentUnitId: 'u1',
-      gradeCalcBasis: 'percent', // 'percent' | 'raw'
+      gradeCalcBasis: 'percent',
       students: {
         'ป.6-1': [
           { no: 1, code: '6101', name: 'ด.ช.ธนกฤต รักเรียน' },
@@ -792,7 +954,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     };
 
     // ============================================================================
-    // 2. ระบบ PWA (รองรับทั้งไฟล์จริง manifest.json / sw.js และ Fallback อัตโนมัติ)
+    // 2. ระบบ PWA (Manifest & Service Worker)
     // ============================================================================
     function setupPwa() {
       const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
@@ -803,12 +965,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       </svg>`;
       const iconDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgIcon);
 
-      // กรณีเปิดไฟล์เดี่ยวโดยไม่มี manifest.json บนเซิร์ฟเวอร์ ให้สร้าง Blob Manifest แทนอัตโนมัติ
       fetch('manifest.json', { method: 'HEAD' }).catch(() => {
         const manifestObj = {
-          name: 'P.6 SmartScore ระบบบันทึกคะแนนชั้น ป.6',
+          name: 'P.6 SmartScore ระบบบันทึกคะแนนและติดตามงานค้าง ป.6',
           short_name: 'P.6 SmartScore',
-          description: 'ระบบบันทึกคะแนนและตัดเกรดชั้น ป.6 เชื่อมต่อ Supabase Real-time',
+          description: 'ระบบบันทึกคะแนนและติดตามงานค้างชั้น ป.6 แยกเก็บรายบุคคลบน Supabase Real-time',
           start_url: window.location.href,
           display: 'standalone',
           background_color: '#f4f6fb',
@@ -825,7 +986,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
         navigator.serviceWorker.register('sw.js').catch(() => {
           const swCode = `
-            const CACHE_NAME = 'p6-smartscore-pwa-v3';
+            const CACHE_NAME = 'p6-smartscore-pwa-v4';
             self.addEventListener('install', (e) => { self.skipWaiting(); });
             self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
             self.addEventListener('fetch', (e) => {
@@ -858,7 +1019,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 3. ระบบเชื่อมต่อฐานข้อมูล Supabase & Real-time Sync
+    // 3. ระบบเชื่อมต่อฐานข้อมูล Supabase แบบแยก 3 ตารางรายบุคคล & Real-time
     // ============================================================================
     function setSyncStatus(status, customMessage) {
       const badge = document.getElementById('syncBadge');
@@ -871,37 +1032,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-sky-300 bg-sky-50 text-sky-800 flex items-center gap-2 font-semibold';
         dot.classList.add('hidden');
         spinner.classList.remove('hidden');
-        text.textContent = customMessage || 'กำลังซิงค์ Supabase...';
+        text.textContent = customMessage || 'กำลังซิงค์ข้อมูลรายคน...';
       } else if (status === 'realtime') {
         badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-800 flex items-center gap-2 font-semibold';
         spinner.classList.add('hidden');
         dot.classList.remove('hidden');
         dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
-        text.textContent = customMessage || `⚡ Real-time ซิงค์แล้ว (${timeStr})`;
+        text.textContent = customMessage || `⚡ ซิงค์รายบุคคลแล้ว (${timeStr})`;
         document.getElementById('sqlSetupBanner').classList.add('hidden');
       } else if (status === 'need_sql') {
         badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-amber-400 bg-amber-50 text-amber-900 flex items-center gap-2 font-semibold';
         spinner.classList.add('hidden');
         dot.classList.remove('hidden');
         dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping';
-        text.textContent = '⚠️ รอสร้างตาราง SQL ครั้งแรก';
+        text.textContent = '⚠️ รอรัน SQL สร้าง 3 ตาราง';
         document.getElementById('sqlSetupBanner').classList.remove('hidden');
       } else if (status === 'error') {
         badge.className = 'cursor-pointer select-none text-xs px-3.5 py-2 rounded-2xl border border-rose-300 bg-rose-50 text-rose-800 flex items-center gap-2 font-semibold';
         spinner.classList.add('hidden');
         dot.classList.remove('hidden');
         dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
-        text.textContent = customMessage || 'ซิงค์ไม่สำเร็จ (แตะเพื่อซิงค์ใหม่)';
+        text.textContent = customMessage || 'ซิงค์ไม่สำเร็จ (แตะเพื่อลองใหม่)';
       }
-    }
-
-    function handleSyncBadgeClick() {
-      pushToSupabase();
     }
 
     function copySqlScript() {
       navigator.clipboard.writeText(SQL_SETUP_SCRIPT).then(() => {
-        alert('✅ คัดลอกคำสั่ง SQL เรียบร้อย!\n\nนำไปวางในเมนู SQL Editor ของเว็บ Supabase แล้วกด Run ได้เลยครับ');
+        alert('✅ คัดลอกคำสั่ง SQL (สร้าง 3 ตารางรายบุคคล) เรียบร้อย!\n\nนำไปวางในเมนู SQL Editor ของเว็บ Supabase แล้วกด Run ได้เลยครับ');
       }).catch(() => {
         prompt('คัดลอกคำสั่ง SQL ด้านล่างไปวางใน SQL Editor ของ Supabase:', SQL_SETUP_SCRIPT);
       });
@@ -909,32 +1066,40 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
 
     async function initSupabaseConnection() {
       try {
-        setSyncStatus('syncing', 'กำลังเชื่อมต่อ Supabase...');
+        setSyncStatus('syncing', 'กำลังโหลดตารางรายบุคคล...');
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        await pullFromSupabase(true);
+        await loadAllRelationalTablesFromSupabase();
 
         if (realtimeChannel) {
           supabaseClient.removeChannel(realtimeChannel);
         }
 
+        // ดักฟังการเปลี่ยนแปลงแบบ Real-time จากทั้ง 3 ตาราง
         realtimeChannel = supabaseClient
-          .channel('p6_smartscore_realtime_room')
+          .channel('p6_relational_realtime')
           .on(
             'postgres_changes',
-            { event: '*', schema: 'public', table: SUPABASE_TABLE, filter: `id=eq.${SUPABASE_ROW_ID}` },
+            { event: '*', schema: 'public', table: TABLE_SCORES },
             (payload) => {
-              if (payload.new && payload.new.payload) {
-                applyIncomingRealtimeState(payload.new.payload);
+              if (payload.new && payload.new.record_id) {
+                applyIncomingStudentScoreRow(payload.new);
               }
             }
           )
           .on(
-            'broadcast',
-            { event: 'grade_updated' },
-            (msg) => {
-              if (msg.payload && msg.payload.sender !== clientSessionId && msg.payload.state) {
-                applyIncomingRealtimeState(msg.payload.state, msg.payload.changedKey);
+            'postgres_changes',
+            { event: '*', schema: 'public', table: TABLE_STUDENTS },
+            () => {
+              loadStudentsTableOnly();
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: TABLE_CONFIGS },
+            (payload) => {
+              if (payload.new && payload.new.subject_id) {
+                applyIncomingSubjectConfigRow(payload.new);
               }
             }
           )
@@ -944,97 +1109,366 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       }
     }
 
-    function applyIncomingRealtimeState(incomingState, changedKey = '') {
-      if (!incomingState || !incomingState.subjects) return;
-      const keepSubject = state.currentSubject;
-      const keepRoom = state.currentRoom;
-      const keepUnitId = state.currentUnitId;
-
-      state = incomingState;
-      state.currentSubject = keepSubject;
-      state.currentRoom = keepRoom;
-      state.currentUnitId = keepUnitId;
-      normalizeState();
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      lastHighlightedCellKey = changedKey || '';
-      renderAll();
-      setSyncStatus('realtime', `⚡ ซิงค์ Real-time (${new Date().toLocaleTimeString('th-TH')})`);
-    }
-
-    async function pushToSupabase(changedKey = '') {
+    // โหลดข้อมูลจากทั้ง 3 ตาราง (p6_students, p6_subject_configs, p6_student_scores)
+    async function loadAllRelationalTablesFromSupabase() {
       if (!supabaseClient) return;
-      setSyncStatus('syncing', 'กำลังบันทึกขึ้น Supabase...');
       try {
-        const nowIso = new Date().toISOString();
-        const { error } = await supabaseClient
-          .from(SUPABASE_TABLE)
-          .upsert({
-            id: SUPABASE_ROW_ID,
-            payload: state,
-            updated_at: nowIso
-          }, { onConflict: 'id' });
+        // 1. โหลดรายชื่อนักเรียนรายคนจาก p6_students
+        const { data: stuRows, error: stuErr } = await supabaseClient
+          .from(TABLE_STUDENTS)
+          .select('*')
+          .order('student_no', { ascending: true });
 
-        if (error) {
-          if (error.code === '42P01' || (error.message && error.message.includes('p6_smartscore_db'))) {
+        if (stuErr) {
+          if (stuErr.code === '42P01' || (stuErr.message && stuErr.message.includes(TABLE_STUDENTS))) {
             setSyncStatus('need_sql');
             return;
           }
-          throw error;
+          throw stuErr;
         }
 
-        if (realtimeChannel) {
-          realtimeChannel.send({
-            type: 'broadcast',
-            event: 'grade_updated',
-            payload: {
-              sender: clientSessionId,
-              changedKey: changedKey,
-              state: state
+        // 2. โหลดโครงสร้างหน่วยการเรียนรู้ของแต่ละวิชาจาก p6_subject_configs
+        const { data: cfgRows, error: cfgErr } = await supabaseClient
+          .from(TABLE_CONFIGS)
+          .select('*');
+
+        if (cfgErr) throw cfgErr;
+
+        // 3. โหลดคะแนนรายบุคคลจาก p6_student_scores
+        const { data: scoreRows, error: scoreErr } = await supabaseClient
+          .from(TABLE_SCORES)
+          .select('*');
+
+        if (scoreErr) throw scoreErr;
+
+        // ถ้าตารางเพิ่งสร้างใหม่และยังว่างอยู่ ให้ส่งข้อมูลเริ่มต้นขึ้นไปสร้างแถวรายบุคคลทันที
+        if ((!stuRows || stuRows.length === 0) && (!cfgRows || cfgRows.length === 0)) {
+          await syncAllToSupabase();
+          return;
+        }
+
+        if (stuRows && stuRows.length > 0) {
+          const groupedStu = { 'ป.6-1': [], 'ป.6-2': [], 'ป.6-3': [] };
+          stuRows.forEach(r => {
+            if (!groupedStu[r.room]) groupedStu[r.room] = [];
+            groupedStu[r.room].push({
+              no: Number(r.student_no),
+              code: String(r.student_code),
+              name: r.full_name
+            });
+          });
+          state.students = groupedStu;
+        }
+
+        if (cfgRows && cfgRows.length > 0) {
+          cfgRows.forEach(c => {
+            if (state.subjects[c.subject_id]) {
+              state.subjects[c.subject_id].name = c.subject_name || state.subjects[c.subject_id].name;
+              state.subjects[c.subject_id].examMax = c.exam_max !== undefined ? Number(c.exam_max) : 20;
+              if (Array.isArray(c.units) && c.units.length > 0) {
+                state.subjects[c.subject_id].units = c.units;
+              }
+            }
+            if (c.grade_basis) state.gradeCalcBasis = c.grade_basis;
+          });
+        }
+
+        if (scoreRows && scoreRows.length > 0) {
+          // เคลียร์และประกอบคะแนนรายบุคคลเข้าสู่ state
+          ['soc', 'his', 'occ'].forEach(sId => {
+            state.subjects[sId].scores = {};
+            state.subjects[sId].examScores = {};
+          });
+          scoreRows.forEach(row => {
+            const sub = state.subjects[row.subject_id];
+            if (!sub) return;
+            const taskMap = row.task_scores || {};
+            Object.keys(taskMap).forEach(unitTaskKey => {
+              const fullKey = `${row.room}_${row.student_code}_${unitTaskKey}`;
+              sub.scores[fullKey] = taskMap[unitTaskKey];
+            });
+            if (row.exam_score !== null && row.exam_score !== undefined) {
+              sub.examScores[`${row.room}_${row.student_code}`] = Number(row.exam_score);
             }
           });
         }
 
+        normalizeState();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
         setSyncStatus('realtime');
       } catch (err) {
-        setSyncStatus('error', 'ซิงค์ไม่สำเร็จ (คลิกเพื่อลองใหม่)');
+        setSyncStatus('error', 'โหลดฐานข้อมูลไม่สำเร็จ');
       }
     }
 
-    async function pullFromSupabase(silent = false) {
+    async function loadStudentsTableOnly() {
       if (!supabaseClient) return;
-      setSyncStatus('syncing', 'กำลังโหลดข้อมูลจาก Supabase...');
+      const { data: stuRows } = await supabaseClient
+        .from(TABLE_STUDENTS)
+        .select('*')
+        .order('student_no', { ascending: true });
+      if (stuRows && stuRows.length > 0) {
+        const groupedStu = { 'ป.6-1': [], 'ป.6-2': [], 'ป.6-3': [] };
+        stuRows.forEach(r => {
+          if (!groupedStu[r.room]) groupedStu[r.room] = [];
+          groupedStu[r.room].push({
+            no: Number(r.student_no),
+            code: String(r.student_code),
+            name: r.full_name
+          });
+        });
+        state.students = groupedStu;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
+      }
+    }
+
+    // เมื่อมีเครื่องอื่นอัปเดตคะแนนของนักเรียน 1 คน (Real-time Per-Student Update)
+    function applyIncomingStudentScoreRow(row) {
+      const sub = state.subjects[row.subject_id];
+      if (!sub) return;
+      const prefix = `${row.room}_${row.student_code}_`;
+      // ล้างค่าเดิมของนักเรียนคนนี้ก่อนเขียนค่าใหม่
+      Object.keys(sub.scores).forEach(k => {
+        if (k.startsWith(prefix)) delete sub.scores[k];
+      });
+      const taskMap = row.task_scores || {};
+      Object.keys(taskMap).forEach(unitTaskKey => {
+        sub.scores[`${prefix}${unitTaskKey}`] = taskMap[unitTaskKey];
+      });
+      const examKey = `${row.room}_${row.student_code}`;
+      if (row.exam_score !== null && row.exam_score !== undefined) {
+        sub.examScores[examKey] = Number(row.exam_score);
+      } else {
+        delete sub.examScores[examKey];
+      }
+
+      lastHighlightedCellKey = prefix;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+      setSyncStatus('realtime', `⚡ อัปเดต: ${row.full_name}`);
+    }
+
+    function applyIncomingSubjectConfigRow(row) {
+      const sub = state.subjects[row.subject_id];
+      if (!sub) return;
+      sub.examMax = row.exam_max !== undefined ? Number(row.exam_max) : sub.examMax;
+      if (Array.isArray(row.units) && row.units.length > 0) {
+        sub.units = row.units;
+      }
+      if (row.grade_basis) state.gradeCalcBasis = row.grade_basis;
+      normalizeState();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+      setSyncStatus('realtime');
+    }
+
+    // บันทึกเฉพาะแถวของนักเรียน 1 คนลงตาราง p6_student_scores ทันที!
+    async function saveSingleStudentScoreToSupabase(subjectId, room, stuCode) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!supabaseClient) return;
+
+      const sub = state.subjects[subjectId];
+      const stuList = state.students[room] || [];
+      const stu = stuList.find(s => String(s.code) === String(stuCode));
+      if (!sub || !stu) return;
+
+      setSyncStatus('syncing', `กำลังบันทึก ${stu.name}...`);
+
       try {
-        const { data, error } = await supabaseClient
-          .from(SUPABASE_TABLE)
-          .select('payload, updated_at')
-          .eq('id', SUPABASE_ROW_ID)
-          .maybeSingle();
+        const prefix = `${room}_${stu.code}_`;
+        const taskScoresObj = {};
+        Object.keys(sub.scores).forEach(k => {
+          if (k.startsWith(prefix)) {
+            const unitTaskKey = k.substring(prefix.length);
+            taskScoresObj[unitTaskKey] = sub.scores[k];
+          }
+        });
+
+        const examKey = `${room}_${stu.code}`;
+        const hasExam = sub.examScores && sub.examScores[examKey] !== undefined && sub.examScores[examKey] !== '';
+        const examVal = hasExam ? Math.round(Number(sub.examScores[examKey])) : null;
+
+        const summaryRes = calcStudentAllUnitsSummary(sub, room, stu.code);
+        const missingInfo = getStudentMissingTasks(sub, room, stu.code, 'all', false);
+
+        const recordPayload = {
+          record_id: `${subjectId}_${stu.code}`,
+          subject_id: subjectId,
+          room: room,
+          student_code: String(stu.code),
+          student_no: Number(stu.no),
+          full_name: stu.name,
+          task_scores: taskScoresObj,
+          exam_score: examVal,
+          total_score: summaryRes.grandTotal,
+          percentage: summaryRes.percentage,
+          grade: summaryRes.grade,
+          missing_count: missingInfo.missingTasks.length,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabaseClient
+          .from(TABLE_SCORES)
+          .upsert(recordPayload, { onConflict: 'record_id' });
 
         if (error) {
-          if (error.code === '42P01' || (error.message && error.message.includes('p6_smartscore_db'))) {
+          if (error.code === '42P01') {
             setSyncStatus('need_sql');
             return;
           }
           throw error;
         }
-
-        if (data && data.payload && data.payload.subjects) {
-          const keepSub = state.currentSubject;
-          const keepRoom = state.currentRoom;
-          state = data.payload;
-          state.currentSubject = keepSub;
-          state.currentRoom = keepRoom;
-          normalizeState();
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          renderAll();
-          setSyncStatus('realtime');
-          if (!silent) alert('✅ โหลดข้อมูลล่าสุดจาก Supabase สำเร็จ!');
-        } else {
-          await pushToSupabase();
-        }
+        setSyncStatus('realtime', `⚡ บันทึก ${stu.name} แล้ว`);
       } catch (err) {
-        setSyncStatus('error', 'โหลดข้อมูลไม่สำเร็จ (แตะลองใหม่)');
+        setSyncStatus('error', 'บันทึกคะแนนไม่สำเร็จ');
+      }
+    }
+
+    // บันทึกโครงสร้างหน่วยการเรียนรู้ของวิชานั้นลงตาราง p6_subject_configs
+    async function saveSubjectConfigToSupabase(subjectId) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!supabaseClient) return;
+      const sub = state.subjects[subjectId];
+      if (!sub) return;
+
+      setSyncStatus('syncing', 'กำลังบันทึกโครงสร้างวิชา...');
+      try {
+        const { error } = await supabaseClient
+          .from(TABLE_CONFIGS)
+          .upsert({
+            subject_id: subjectId,
+            subject_name: sub.name,
+            exam_max: Math.round(Number(sub.examMax || 0)),
+            grade_basis: state.gradeCalcBasis || 'percent',
+            units: sub.units,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'subject_id' });
+
+        if (error) throw error;
+        setSyncStatus('realtime');
+      } catch (err) {
+        setSyncStatus('error', 'บันทึกตั้งค่าวิชาไม่สำเร็จ');
+      }
+    }
+
+    // บันทึกรายชื่อนักเรียนรายคนลงตาราง p6_students
+    async function saveRoomStudentsToSupabase(roomName) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!supabaseClient) return;
+
+      setSyncStatus('syncing', `กำลังบันทึกรายชื่อ ${roomName}...`);
+      try {
+        const list = state.students[roomName] || [];
+        const rows = list.map(s => ({
+          student_code: String(s.code),
+          room: roomName,
+          student_no: Number(s.no),
+          full_name: s.name,
+          updated_at: new Date().toISOString()
+        }));
+
+        // ลบรายชื่อเดิมของห้องนั้นแล้วใส่ชุดใหม่เพื่อความถูกต้อง
+        await supabaseClient.from(TABLE_STUDENTS).delete().eq('room', roomName);
+        if (rows.length > 0) {
+          const { error } = await supabaseClient.from(TABLE_STUDENTS).upsert(rows, { onConflict: 'student_code' });
+          if (error) throw error;
+        }
+        setSyncStatus('realtime');
+      } catch (err) {
+        setSyncStatus('error', 'บันทึกรายชื่อไม่สำเร็จ');
+      }
+    }
+
+    // ซิงค์ข้อมูลทั้งหมดขึ้นทั้ง 3 ตาราง
+    async function syncAllToSupabase() {
+      if (!supabaseClient) return;
+      setSyncStatus('syncing', 'กำลังซิงค์ทั้ง 3 ตาราง...');
+      try {
+        // 1. ซิงค์นักเรียนทุกคนเข้า p6_students
+        const allStudentsRows = [];
+        ROOM_LIST.forEach(room => {
+          (state.students[room] || []).forEach(s => {
+            allStudentsRows.push({
+              student_code: String(s.code),
+              room: room,
+              student_no: Number(s.no),
+              full_name: s.name,
+              updated_at: new Date().toISOString()
+            });
+          });
+        });
+
+        if (allStudentsRows.length > 0) {
+          const { error: stuErr } = await supabaseClient
+            .from(TABLE_STUDENTS)
+            .upsert(allStudentsRows, { onConflict: 'student_code' });
+          if (stuErr) {
+            if (stuErr.code === '42P01') {
+              setSyncStatus('need_sql');
+              return;
+            }
+            throw stuErr;
+          }
+        }
+
+        // 2. ซิงค์ตั้งค่าทั้ง 3 วิชาเข้า p6_subject_configs
+        const cfgRows = ['soc', 'his', 'occ'].map(sId => ({
+          subject_id: sId,
+          subject_name: state.subjects[sId].name,
+          exam_max: Math.round(Number(state.subjects[sId].examMax || 0)),
+          grade_basis: state.gradeCalcBasis || 'percent',
+          units: state.subjects[sId].units,
+          updated_at: new Date().toISOString()
+        }));
+        await supabaseClient.from(TABLE_CONFIGS).upsert(cfgRows, { onConflict: 'subject_id' });
+
+        // 3. ซิงค์คะแนนรายคนเข้า p6_student_scores
+        const allScoreRows = [];
+        ['soc', 'his', 'occ'].forEach(subjectId => {
+          const sub = state.subjects[subjectId];
+          ROOM_LIST.forEach(room => {
+            (state.students[room] || []).forEach(stu => {
+              const prefix = `${room}_${stu.code}_`;
+              const taskScoresObj = {};
+              Object.keys(sub.scores).forEach(k => {
+                if (k.startsWith(prefix)) {
+                  taskScoresObj[k.substring(prefix.length)] = sub.scores[k];
+                }
+              });
+              const examKey = `${room}_${stu.code}`;
+              const hasExam = sub.examScores && sub.examScores[examKey] !== undefined && sub.examScores[examKey] !== '';
+              const examVal = hasExam ? Math.round(Number(sub.examScores[examKey])) : null;
+              const summaryRes = calcStudentAllUnitsSummary(sub, room, stu.code);
+              const missingInfo = getStudentMissingTasks(sub, room, stu.code, 'all', false);
+
+              allScoreRows.push({
+                record_id: `${subjectId}_${stu.code}`,
+                subject_id: subjectId,
+                room: room,
+                student_code: String(stu.code),
+                student_no: Number(stu.no),
+                full_name: stu.name,
+                task_scores: taskScoresObj,
+                exam_score: examVal,
+                total_score: summaryRes.grandTotal,
+                percentage: summaryRes.percentage,
+                grade: summaryRes.grade,
+                missing_count: missingInfo.missingTasks.length,
+                updated_at: new Date().toISOString()
+              });
+            });
+          });
+        });
+
+        if (allScoreRows.length > 0) {
+          await supabaseClient.from(TABLE_SCORES).upsert(allScoreRows, { onConflict: 'record_id' });
+        }
+
+        setSyncStatus('realtime');
+      } catch (err) {
+        setSyncStatus('error', 'ซิงค์ไม่สำเร็จ (คลิกลองใหม่)');
       }
     }
 
@@ -1046,13 +1480,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         if (json && json.students) {
           state.students = json.students;
           normalizeState();
-          saveLocal(true);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          await syncAllToSupabase();
           renderAll();
           if (document.getElementById('studentManagerModal').classList.contains('flex')) {
             switchManageRoom(manageRoomCurrent);
           }
           const totalStu = ROOM_LIST.reduce((acc, r) => acc + (state.students[r] ? state.students[r].length : 0), 0);
-          alert(`🎉 ดึงรายชื่อนักเรียนทั้ง 3 ห้อง (${totalStu} คน) จาก Google Sheet เดิมเข้าสู่ Supabase เรียบร้อยครับ!`);
+          alert(`🎉 ดึงรายชื่อนักเรียนทั้ง 3 ห้อง (${totalStu} คน) และบันทึกแยกเป็นรายบุคคลลงตาราง p6_students & p6_student_scores เรียบร้อยครับ!`);
         } else {
           alert('ไม่พบข้อมูลรายชื่อใน Google Sheet เดิม');
         }
@@ -1062,7 +1497,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 4. ระบบคำนวณคะแนนรายหน่วย, รวมทุกหน่วย และตัดเกรดอัตโนมัติ (8 ระดับ)
+    // 4. ระบบคำนวณคะแนน, ตรวจสอบงานค้าง (Missing Work), และตัดเกรดอัตโนมัติ
     // ============================================================================
     function playScanBeep(isSuccess = true) {
       try {
@@ -1135,16 +1570,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       initSupabaseConnection();
     }
 
-    function saveLocal(autoSync = true, changedKey = '') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      if (autoSync && supabaseClient) {
-        if (syncTimer) clearTimeout(syncTimer);
-        syncTimer = setTimeout(() => {
-          pushToSupabase(changedKey);
-        }, 250);
-      }
-    }
-
     function getActiveSub() {
       return state.subjects[state.currentSubject];
     }
@@ -1154,7 +1579,49 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       return sub.units.find(u => u.id === state.currentUnitId) || sub.units[0];
     }
 
-    // คำนวณคะแนนสรุปประจำหน่วย (จำนวนเต็ม)
+    // ฟังก์ชันตรวจสอบงานค้างของนักเรียนรายบุคคล
+    function getStudentMissingTasks(sub, room, stuCode, unitFilter = 'all', includeZero = false) {
+      const unitsToCheck = unitFilter === 'all'
+        ? sub.units
+        : sub.units.filter(u => u.id === unitFilter);
+
+      let totalAssigned = 0;
+      let submittedCount = 0;
+      const missingTasks = [];
+
+      unitsToCheck.forEach(u => {
+        u.tasks.forEach(t => {
+          totalAssigned++;
+          const key = `${room}_${stuCode}_${u.id}_${t.id}`;
+          const rawVal = sub.scores[key];
+          const isEmpty = rawVal === undefined || rawVal === null || rawVal === '';
+          const isZero = !isEmpty && Number(rawVal) === 0;
+
+          if (isEmpty || (includeZero && isZero)) {
+            missingTasks.push({
+              unitId: u.id,
+              unitName: u.name,
+              taskId: t.id,
+              taskName: t.name,
+              max: t.max,
+              reason: isEmpty ? 'ยังไม่ส่ง' : 'ได้ 0 คะแนน'
+            });
+          } else {
+            submittedCount++;
+          }
+        });
+      });
+
+      const progressPercent = totalAssigned > 0 ? Math.round((submittedCount / totalAssigned) * 100) : 100;
+      return {
+        totalAssigned,
+        submittedCount,
+        missingTasks,
+        progressPercent,
+        isComplete: missingTasks.length === 0
+      };
+    }
+
     function calcUnitSummary(sub, room, stuCode, unit) {
       let rawAll = 0;
       let maxAll = 0;
@@ -1187,7 +1654,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       return { summaryValues, total, maxTotal };
     }
 
-    // ฟังก์ชันตัดเกรด 8 ระดับตามเกณฑ์มาตรฐานกระทรวงศึกษาธิการ
     function computeGradeFromScore(scoreOutOf100) {
       const s = Math.round(Number(scoreOutOf100) || 0);
       if (s >= 80) return { grade: '4', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
@@ -1200,7 +1666,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       return { grade: '0', color: 'bg-rose-100 text-rose-800 border-rose-300' };
     }
 
-    // คำนวณคะแนนรวมทุกหน่วย + คะแนนสอบ + ร้อยละ + เกรด ของนักเรียน 1 คน
     function calcStudentAllUnitsSummary(sub, room, stuCode) {
       const unitTotals = [];
       let sumUnitsScore = 0;
@@ -1251,7 +1716,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       if (m < 0) m = 0;
       if (m > 100) m = 100;
       sub.examMax = m;
-      saveLocal(true);
+      saveSubjectConfigToSupabase(state.currentSubject);
       renderAll();
     }
 
@@ -1269,13 +1734,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         sub.examScores[key] = intVal;
       }
       lastHighlightedCellKey = key + '_exam';
-      saveLocal(true, key + '_exam');
+      saveSingleStudentScoreToSupabase(state.currentSubject, room, stuCode);
       renderTable();
     }
 
     function updateGradeCalcBasis(basis) {
       state.gradeCalcBasis = basis;
-      saveLocal(true);
+      saveSubjectConfigToSupabase(state.currentSubject);
       renderAll();
     }
 
@@ -1308,22 +1773,50 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         `;
       });
 
-      // ปุ่มสลับมุมมองตาราง
+      const sub = getActiveSub();
+      const unit = getActiveUnit();
+
+      // คำนวณจำนวนเด็กที่มีงานค้างในห้องปัจจุบันเพื่อแสดงบนป้ายแจ้งเตือนด้านบน
+      const currentRoomStudents = state.students[state.currentRoom] || [];
+      let studentsWithMissingCount = 0;
+      currentRoomStudents.forEach(stu => {
+        const mInfo = getStudentMissingTasks(sub, state.currentRoom, stu.code, 'all', false);
+        if (!mInfo.isComplete) studentsWithMissingCount++;
+      });
+      const badgeTop = document.getElementById('missingCountBadgeTop');
+      badgeTop.textContent = `${studentsWithMissingCount} คน`;
+      badgeTop.className = studentsWithMissingCount > 0
+        ? 'px-2 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-extrabold'
+        : 'px-2 py-0.2 rounded-full text-[10px] bg-emerald-500 text-white font-extrabold';
+
+      // ปุ่มสลับมุมมองตาราง 3 โหมด
       const btnUnit = document.getElementById('viewBtn_unit');
+      const btnMissing = document.getElementById('viewBtn_missing');
       const btnSum = document.getElementById('viewBtn_summary');
+
       const unitToolbar = document.getElementById('unitToolbarRow');
+      const missingToolbar = document.getElementById('missingToolbarRow');
       const sumToolbar = document.getElementById('summaryToolbarRow');
 
+      btnUnit.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      btnMissing.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      btnSum.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+
+      unitToolbar.classList.add('hidden');
+      missingToolbar.classList.add('hidden');
+      missingToolbar.classList.remove('flex');
+      sumToolbar.classList.add('hidden');
+      sumToolbar.classList.remove('flex');
+
       if (currentViewMode === 'unit') {
-        btnUnit.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-900 text-white shadow-sm';
-        btnSum.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+        btnUnit.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-900 text-white shadow-sm';
         unitToolbar.classList.remove('hidden');
-        sumToolbar.classList.add('hidden');
-        sumToolbar.classList.remove('flex');
+      } else if (currentViewMode === 'missing') {
+        btnMissing.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-rose-600 text-white shadow-sm';
+        missingToolbar.classList.remove('hidden');
+        missingToolbar.classList.add('flex');
       } else {
-        btnSum.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-sm';
-        btnUnit.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
-        unitToolbar.classList.add('hidden');
+        btnSum.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-sm';
         sumToolbar.classList.remove('hidden');
         sumToolbar.classList.add('flex');
       }
@@ -1337,33 +1830,44 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         btn.textContent = `${r} (${(state.students[r] || []).length})`;
       });
 
-      const sub = getActiveSub();
-      const unit = getActiveUnit();
       const uSel = document.getElementById('unitSelect');
       uSel.innerHTML = sub.units.map(u =>
         `<option value="${u.id}" ${u.id === unit.id ? 'selected' : ''}>${u.name} (งานดิบ ${u.tasks.length} / สรุป ${u.summaryCols.length})</option>`
       ).join('');
+
+      // อัปเดตตัวเลือกหน่วยในหน้าตรวจสอบงานค้าง
+      const mUnitSel = document.getElementById('missingFilterUnit');
+      const keepMUnit = mUnitSel.value || 'all';
+      mUnitSel.innerHTML = `<option value="all">รวมทุกหน่วยการเรียนรู้ (${sub.units.length} หน่วย)</option>` +
+        sub.units.map(u => `<option value="${u.id}" ${u.id === keepMUnit ? 'selected' : ''}>เฉพาะ ${u.name}</option>`).join('');
 
       document.getElementById('examMaxInput').value = sub.examMax !== undefined ? sub.examMax : 20;
       document.getElementById('gradeCalcBasisSelect').value = state.gradeCalcBasis || 'percent';
 
       document.getElementById('tableBannerIcon').textContent = sub.icon;
       document.getElementById('tableBannerTitle').textContent = `${sub.name} • ห้อง ${state.currentRoom}`;
-      document.getElementById('tableBannerUnit').textContent = currentViewMode === 'unit'
-        ? unit.name
-        : `🏆 สรุปรวมทุกหน่วย (${sub.units.length} หน่วย) & ตัดเกรด`;
+      if (currentViewMode === 'unit') {
+        document.getElementById('tableBannerUnit').textContent = unit.name;
+      } else if (currentViewMode === 'missing') {
+        document.getElementById('tableBannerUnit').textContent = '📋 ระบบตรวจสอบงานค้างและการส่งงาน';
+      } else {
+        document.getElementById('tableBannerUnit').textContent = `🏆 สรุปรวมทุกหน่วย (${sub.units.length} หน่วย) & ตัดเกรด`;
+      }
 
       renderTable();
     }
 
     function renderTable() {
-      if (currentViewMode === 'summary') {
+      if (currentViewMode === 'missing') {
+        renderMissingWorkTable();
+      } else if (currentViewMode === 'summary') {
         renderSummaryAndGradeTable();
       } else {
         renderUnitScoreTable();
       }
     }
 
+    // โหมดที่ 1: ตารางบันทึกคะแนนรายหน่วย
     function renderUnitScoreTable() {
       const sub = getActiveSub();
       const unit = getActiveUnit();
@@ -1401,7 +1905,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         document.getElementById('gradeTableBody').innerHTML = `
           <tr>
             <td colspan="${4 + unit.tasks.length + unit.summaryCols.length}" class="py-10 text-center text-slate-400">
-              ยังไม่มีรายชื่อนักเรียนในห้อง ${state.currentRoom} (คลิกปุ่ม "📥 นำเข้า / จัดการรายชื่อ 3 ห้อง" เพื่อเพิ่มหรือดึงจาก Sheet เดิม)
+              ยังไม่มีรายชื่อนักเรียนในห้อง ${state.currentRoom} (คลิกปุ่ม "👥 รายชื่อ 3 ห้อง" เพื่อเพิ่มหรือดึงจาก Sheet เดิม)
             </td>
           </tr>
         `;
@@ -1427,7 +1931,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
                 <td class="p-1.5 text-center border-l border-slate-100">
                   <input type="number" step="1" min="0" max="${t.max}" value="${val}" placeholder="-"
                     onchange="updateScore('${state.currentSubject}','${state.currentRoom}','${stu.code}','${unit.id}','${t.id}', this.value, ${t.max})"
-                    class="score-input w-14 text-center border ${hasScore ? 'border-indigo-300 bg-indigo-50/40 text-indigo-950' : 'border-slate-200 bg-slate-50/60 text-slate-700'} rounded-xl py-1.5 font-bold focus:bg-white focus:border-indigo-600 focus:outline-none" />
+                    class="score-input w-14 text-center border ${hasScore ? 'border-indigo-300 bg-indigo-50/40 text-indigo-950' : 'border-rose-200 bg-rose-50/30 text-slate-700'} rounded-xl py-1.5 font-bold focus:bg-white focus:border-indigo-600 focus:outline-none" />
                 </td>
               `;
             }).join('')}
@@ -1441,7 +1945,232 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       document.getElementById('gradeTableBody').innerHTML = bodyHtml;
     }
 
-    // ตารางสรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ
+    // โหมดที่ 2: ตารางตรวจสอบงานค้าง (Missing Work Tracker สำหรับเด็กประถม)
+    function renderMissingWorkTable() {
+      const sub = getActiveSub();
+      const students = (state.students[state.currentRoom] || []).slice().sort((a, b) => a.no - b.no);
+      const statusFilter = document.getElementById('missingFilterStatus').value || 'missing_only';
+      const unitFilter = document.getElementById('missingFilterUnit').value || 'all';
+      const includeZero = document.getElementById('missingIncludeZero').checked;
+
+      let completePeople = 0;
+      let missingPeople = 0;
+      let totalMissingItemsCount = 0;
+
+      const enrichedStudents = students.map(stu => {
+        const info = getStudentMissingTasks(sub, state.currentRoom, stu.code, unitFilter, includeZero);
+        if (info.isComplete) {
+          completePeople++;
+        } else {
+          missingPeople++;
+          totalMissingItemsCount += info.missingTasks.length;
+        }
+        return { stu, info };
+      });
+
+      document.getElementById('missingStatComplete').textContent = `${completePeople} คน`;
+      document.getElementById('missingStatStudents').textContent = `${missingPeople} คน`;
+      document.getElementById('missingStatTotalItems').textContent = `${totalMissingItemsCount} ชิ้น`;
+
+      const filteredList = enrichedStudents.filter(item => {
+        if (statusFilter === 'missing_only') return !item.info.isComplete;
+        if (statusFilter === 'complete_only') return item.info.isComplete;
+        return true;
+      });
+
+      const headHtml = `
+        <tr>
+          <th class="p-3 text-center w-14 font-semibold">เลขที่</th>
+          <th class="p-3 text-center w-24 font-semibold">รหัสนักเรียน</th>
+          <th class="p-3 text-left min-w-[180px] font-semibold">ชื่อ - นามสกุล</th>
+          <th class="p-3 text-center w-44 font-semibold border-l border-slate-700">ความคืบหน้าการส่งงาน</th>
+          <th class="p-3 text-center w-28 font-semibold border-l border-slate-700">สถานะ</th>
+          <th class="p-3 text-left font-semibold border-l border-slate-700">รายการชิ้นงานที่ยังไม่ส่ง (คลิกที่ป้ายเพื่อกรอกคะแนนตามส่งงานได้ทันที)</th>
+        </tr>
+      `;
+      document.getElementById('gradeTableHead').innerHTML = headHtml;
+
+      if (filteredList.length === 0) {
+        document.getElementById('gradeTableBody').innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center">
+              <div class="text-3xl mb-2">🌟🎉</div>
+              <div class="font-bold text-base text-emerald-700">ยอดเยี่ยมมาก! ไม่มีนักเรียนที่ค้างส่งงานตามเงื่อนไขที่เลือกครับ</div>
+              <p class="text-xs text-slate-400 mt-1">สามารถเปลี่ยนตัวกรองด้านบนเป็น "แสดงนักเรียนทุกคนในห้อง" เพื่อดูภาพรวมทั้งห้องได้ครับ</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const bodyHtml = filteredList.map(({ stu, info }, idx) => {
+        const stripe = idx % 2 === 1 ? 'bg-slate-50/50' : 'bg-white';
+        const barColor = info.isComplete ? 'bg-emerald-500' : (info.progressPercent >= 50 ? 'bg-amber-500' : 'bg-rose-500');
+
+        const missingPillsHtml = info.isComplete
+          ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs">🌟 ส่งงานครบทุกชิ้นแล้ว เก่งมาก!</span>`
+          : info.missingTasks.map(m => `
+              <button type="button"
+                onclick="openQuickGradeMissingModal('${state.currentRoom}','${stu.code}','${stu.name.replace(/'/g, "\\'")}','${m.unitId}','${m.unitName.replace(/'/g, "\\'")}','${m.taskId}','${m.taskName.replace(/'/g, "\\'")}',${m.max})"
+                class="inline-flex items-center gap-1.5 m-1 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-indigo-50 text-rose-800 hover:text-indigo-900 border border-rose-200 hover:border-indigo-300 font-semibold text-xs transition shadow-sm active:scale-95"
+                title="คลิกเพื่อให้คะแนนชิ้นงานนี้ทันที">
+                <span class="px-1.5 py-0.2 rounded bg-rose-200/80 text-rose-900 text-[10px] font-bold">${m.unitName}</span>
+                <span>${m.taskName}</span>
+                <span class="text-[10px] text-slate-500">(เต็ม ${m.max})</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-white text-indigo-600 font-bold border border-indigo-200">+ ใส่คะแนน</span>
+              </button>
+            `).join('');
+
+        return `
+          <tr class="${stripe} hover:bg-indigo-50/30 transition-colors">
+            <td class="p-3 text-center font-bold text-slate-600">${stu.no}</td>
+            <td class="p-3 text-center">
+              <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold">${stu.code}</span>
+            </td>
+            <td class="p-3 font-bold text-slate-800">${stu.name}</td>
+            <td class="p-3 border-l border-slate-100">
+              <div class="flex items-center justify-between text-[11px] font-bold mb-1">
+                <span class="text-slate-600">ส่งแล้ว ${info.submittedCount}/${info.totalAssigned} ชิ้น</span>
+                <span class="${info.isComplete ? 'text-emerald-600' : 'text-rose-600'}">${info.progressPercent}%</span>
+              </div>
+              <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                <div class="${barColor} h-full rounded-full transition-all duration-300" style="width: ${info.progressPercent}%"></div>
+              </div>
+            </td>
+            <td class="p-3 text-center border-l border-slate-100">
+              ${info.isComplete
+                ? `<span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs">ครบแล้ว</span>`
+                : `<span class="px-2.5 py-1 rounded-xl bg-rose-100 text-rose-800 font-extrabold text-xs">ค้าง ${info.missingTasks.length} ชิ้น</span>`}
+            </td>
+            <td class="p-2.5 border-l border-slate-100">
+              <div class="flex flex-wrap items-center">${missingPillsHtml}</div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('gradeTableBody').innerHTML = bodyHtml;
+    }
+
+    // เปิดหน้าต่างกรอกคะแนนตามส่งงานด่วนเมื่อคลิกป้ายงานค้าง
+    function openQuickGradeMissingModal(room, stuCode, stuName, unitId, unitName, taskId, taskName, maxScore) {
+      quickMissingSession = { room, stuCode, stuName, unitId, unitName, taskId, taskName, maxScore: Number(maxScore) };
+      document.getElementById('qgStuInfo').textContent = `${room} • รหัส ${stuCode} • ${stuName}`;
+      document.getElementById('qgUnitLabel').textContent = unitName;
+      document.getElementById('qgTaskName').textContent = taskName;
+      document.getElementById('qgMaxLabel').textContent = `คะแนนเต็ม ${maxScore} คะแนน`;
+
+      const scoreInput = document.getElementById('qgScoreInput');
+      scoreInput.max = maxScore;
+      scoreInput.value = maxScore;
+
+      const maxS = Number(maxScore || 10);
+      const halfS = Math.round(maxS / 2);
+      const presets = [
+        { label: `เต็ม (${maxS})`, val: maxS, cls: 'bg-emerald-600 text-white' },
+        { label: `${Math.max(0, maxS - 1)} คะแนน`, val: Math.max(0, maxS - 1), cls: 'bg-slate-100 text-slate-700' },
+        { label: `${Math.max(0, maxS - 2)} คะแนน`, val: Math.max(0, maxS - 2), cls: 'bg-slate-100 text-slate-700' },
+        { label: `ครึ่ง (${halfS})`, val: halfS, cls: 'bg-slate-100 text-slate-700' }
+      ];
+      document.getElementById('qgPresetBtns').innerHTML = presets.map(p => `
+        <button type="button" onclick="document.getElementById('qgScoreInput').value=${p.val}"
+          class="px-3 py-1 rounded-xl font-bold ${p.cls} hover:opacity-90">${p.label}</button>
+      `).join('');
+
+      openModal('quickGradeMissingModal');
+    }
+
+    function adjustQuickMissingScore(delta) {
+      const inp = document.getElementById('qgScoreInput');
+      let v = Math.round(Number(inp.value || 0)) + delta;
+      if (v < 0) v = 0;
+      if (v > quickMissingSession.maxScore) v = quickMissingSession.maxScore;
+      inp.value = v;
+    }
+
+    function confirmQuickMissingGrade() {
+      const val = document.getElementById('qgScoreInput').value;
+      updateScore(
+        state.currentSubject,
+        quickMissingSession.room,
+        quickMissingSession.stuCode,
+        quickMissingSession.unitId,
+        quickMissingSession.taskId,
+        val,
+        quickMissingSession.maxScore
+      );
+      playScanBeep(true);
+      closeModal('quickGradeMissingModal');
+    }
+
+    // พิมพ์ใบแจ้งติดตามงานค้างรายบุคคล (สำหรับแจกเด็ก ป.6 ติดสมุด)
+    function printMissingWorkSlips() {
+      const sub = getActiveSub();
+      const unitFilter = document.getElementById('missingFilterUnit').value || 'all';
+      const includeZero = document.getElementById('missingIncludeZero').checked;
+      const students = (state.students[state.currentRoom] || []).slice().sort((a, b) => a.no - b.no);
+
+      const missingList = [];
+      students.forEach(stu => {
+        const info = getStudentMissingTasks(sub, state.currentRoom, stu.code, unitFilter, includeZero);
+        if (!info.isComplete) {
+          missingList.push({ stu, info });
+        }
+      });
+
+      if (missingList.length === 0) {
+        alert('🎉 นักเรียนในห้องนี้ส่งงานครบทุกคนแล้ว ไม่มีรายการงานค้างให้พิมพ์ครับ!');
+        return;
+      }
+
+      const todayStr = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+      const cardsHtml = missingList.map(({ stu, info }) => `
+        <div class="qr-card-item border-2 border-dashed border-slate-500 rounded-2xl p-3.5 bg-white flex flex-col justify-between space-y-2.5 text-xs">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+              <span class="font-extrabold text-slate-900">${sub.icon} ใบแจ้งติดตามงานค้าง (${sub.name})</span>
+              <span class="text-[10px] text-slate-500">วันที่ ${todayStr}</span>
+            </div>
+            <div class="flex items-center justify-between bg-slate-100 px-2.5 py-1.5 rounded-xl font-bold text-slate-900 mb-2">
+              <span>${ stu.name }</span>
+              <span>ห้อง ${state.currentRoom} • เลขที่ ${stu.no}</span>
+            </div>
+            <div class="text-[11px] font-bold text-rose-700 mb-1">
+              📌 รายการชิ้นงานที่ยังไม่ได้ส่ง (${info.missingTasks.length} ชิ้น):
+            </div>
+            <ul class="space-y-1 text-[11px] text-slate-800 pl-1">
+              ${info.missingTasks.map((m, idx) => `
+                <li class="flex items-start gap-1.5">
+                  <span>◻️</span>
+                  <span><b>[${m.unitName}]</b> ${m.taskName} (คะแนนเต็ม ${m.max})</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500">
+            <span>ส่งแล้ว ${info.submittedCount}/${info.totalAssigned} ชิ้น</span>
+            <span>ลงชื่อครูผู้รับงาน .......................................</span>
+          </div>
+        </div>
+      `).join('');
+
+      const printHtml = `
+        <div>
+          <div class="flex items-center justify-between border-b-2 border-slate-900 pb-2 mb-4">
+            <div class="font-bold text-sm text-slate-900">📋 ใบแจ้งติดตามงานค้างรายบุคคล • ${sub.name} ห้อง ${state.currentRoom} (จำนวน ${missingList.length} คน)</div>
+            <div class="text-xs text-slate-500">ตัดตามรอยปะเพื่อแจกให้นักเรียนติดสมุดตามส่งงาน</div>
+          </div>
+          <div class="grid grid-cols-2 gap-3.5">
+            ${cardsHtml}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('printSheetArea').innerHTML = printHtml;
+      setTimeout(() => { window.print(); }, 150);
+    }
+
+    // โหมดที่ 3: ตารางสรุปรวมทุกหน่วย & ตัดเกรดอัตโนมัติ
     function renderSummaryAndGradeTable() {
       const sub = getActiveSub();
       const students = (state.students[state.currentRoom] || []).slice().sort((a, b) => a.no - b.no);
@@ -1527,7 +2256,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
 
       document.getElementById('gradeTableBody').innerHTML = bodyHtml;
 
-      // แสดงสรุปสถิติเกรดด้านบนตาราง
       const pillsEl = document.getElementById('gradeDistributionPills');
       pillsEl.innerHTML = ['4', '3.5', '3', '2.5', '2', '1.5', '1', '0'].map(g => `
         <span class="px-2 py-1 rounded-xl border ${ gradeCount[g] > 0 ? 'bg-slate-900 text-white border-slate-900 font-bold' : 'bg-slate-100 text-slate-400 border-slate-200' }">
@@ -1536,6 +2264,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       `).join('');
     }
 
+    // เมื่อกรอกหรือแก้คะแนนของนักเรียน 1 คน จะอัปเดตเฉพาะแถวของนักเรียนคนนั้นขึ้น Supabase
     function updateScore(subjectId, room, stuCode, unitId, taskId, rawVal, maxScore) {
       const sub = state.subjects[subjectId];
       if (!sub) return;
@@ -1550,8 +2279,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         sub.scores[key] = intVal;
       }
       lastHighlightedCellKey = key;
-      saveLocal(true, key);
-      renderTable();
+      saveSingleStudentScoreToSupabase(subjectId, room, stuCode);
+      renderAll();
     }
 
     function selectSubject(id) {
@@ -1596,7 +2325,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         ]
       });
       state.currentUnitId = newId;
-      saveLocal(true);
+      saveSubjectConfigToSupabase(state.currentSubject);
       renderAll();
     }
 
@@ -1610,20 +2339,22 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       if (!confirm(`ต้องการลบ "${u.name}" หรือไม่?`)) return;
       sub.units = sub.units.filter(item => item.id !== u.id);
       state.currentUnitId = sub.units[0].id;
-      saveLocal(true);
+      saveSubjectConfigToSupabase(state.currentSubject);
       closeModal('unitConfigModal');
       renderAll();
     }
 
     // ============================================================================
-    // 5. ระบบส่งออกตารางคะแนนเป็นไฟล์ Excel (.csv รองรับภาษาไทย UTF-8 BOM)
+    // 5. ระบบส่งออกตารางคะแนนและงานค้างเป็นไฟล์ Excel (.csv UTF-8 BOM)
     // ============================================================================
     function openExportModal() {
       openModal('exportModal');
     }
 
     function exportCurrentTableQuick() {
-      if (currentViewMode === 'summary') {
+      if (currentViewMode === 'missing') {
+        exportMissingWorkCsv();
+      } else if (currentViewMode === 'summary') {
         exportSummaryGradeCsv(false);
       } else {
         exportUnitCsv(false);
@@ -1640,7 +2371,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
 
     function downloadCsvFile(filename, rowsArray) {
       const csvBody = rowsArray.map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
-      // ใส่ \uFEFF (UTF-8 BOM) เพื่อให้เปิดใน Microsoft Excel แล้วภาษาไทยไม่เพี้ยน
       const blob = new Blob(['\uFEFF' + csvBody], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -1693,6 +2423,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       closeModal('exportModal');
     }
 
+    function exportMissingWorkCsv() {
+      const sub = getActiveSub();
+      const students = (state.students[state.currentRoom] || []).slice().sort((a, b) => a.no - b.no);
+      const rows = [
+        ['ห้องเรียน', 'เลขที่', 'รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ส่งแล้ว (ชิ้น)', 'งานทั้งหมด (ชิ้น)', 'จำนวนงานค้าง (ชิ้น)', 'รายการชิ้นงานที่ค้าง']
+      ];
+
+      students.forEach(stu => {
+        const info = getStudentMissingTasks(sub, state.currentRoom, stu.code, 'all', false);
+        const missingNames = info.missingTasks.map(m => `[${m.unitName}] ${m.taskName}`).join(' | ');
+        rows.push([
+          state.currentRoom,
+          stu.no,
+          stu.code,
+          stu.name,
+          info.submittedCount,
+          info.totalAssigned,
+          info.missingTasks.length,
+          missingNames || 'ส่งครบทุกชิ้น'
+        ]);
+      });
+
+      downloadCsvFile(`รายงานตรวจสอบงานค้าง_${sub.name}_${state.currentRoom}.csv`, rows);
+      closeModal('exportModal');
+    }
+
     function exportSummaryGradeCsv(allRooms = false) {
       const sub = getActiveSub();
       const rooms = allRooms ? ROOM_LIST : [state.currentRoom];
@@ -1717,7 +2473,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       header.push(
         `คะแนนรวมสุทธิ (เต็ม ${sample.grandMax})`,
         'คิดเป็นร้อยละ (%)',
-        'เกรดที่ได้'
+        'เกรดที่ได้',
+        'จำนวนงานค้าง (ชิ้น)'
       );
       rows.push(header);
 
@@ -1725,6 +2482,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         const students = (state.students[room] || []).slice().sort((a, b) => a.no - b.no);
         students.forEach(stu => {
           const res = calcStudentAllUnitsSummary(sub, room, stu.code);
+          const mInfo = getStudentMissingTasks(sub, room, stu.code, 'all', false);
           const row = [
             room,
             stu.no,
@@ -1736,7 +2494,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
           if (examMax > 0) {
             row.push(res.hasExam ? res.examScore : 0);
           }
-          row.push(res.grandTotal, res.percentage, res.grade);
+          row.push(res.grandTotal, res.percentage, res.grade, mInfo.missingTasks.length);
           rows.push(row);
         });
       });
@@ -1747,7 +2505,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 6. ระบบสแกน QR แบบใหม่: สแกนติดตัวนักเรียนก่อน -> เลือกช่องงาน -> ใส่คะแนน -> บันทึก
+    // 6. ระบบสแกน QR แบบใหม่: สแกนติดตัวนักเรียนก่อน -> เลือกช่องงาน -> ใส่คะแนน -> บันทึกรายคน
     // ============================================================================
     function openScanModal() {
       scannedSession = {
@@ -1933,6 +2691,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       const room = scannedSession.room;
       if (!stu) return;
 
+      const sub = state.subjects[scannedSession.subjectId];
+      const mInfo = getStudentMissingTasks(sub, room, stu.code, 'all', false);
+
       document.getElementById('scannedStuNoBadge').innerHTML = `
         <span class="text-[9px] text-indigo-300">เลขที่</span>
         <span class="text-base">${stu.no}</span>
@@ -1940,6 +2701,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       document.getElementById('scannedStuRoomBadge').textContent = room;
       document.getElementById('scannedStuCodeBadge').textContent = `รหัส ${stu.code}`;
       document.getElementById('scannedStuName').textContent = stu.name;
+
+      const missingBadge = document.getElementById('scannedStuMissingBadge');
+      if (mInfo.isComplete) {
+        missingBadge.className = 'px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[11px] font-bold';
+        missingBadge.textContent = '🌟 ส่งครบทุกชิ้นแล้ว';
+      } else {
+        missingBadge.className = 'px-2 py-0.5 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold';
+        missingBadge.textContent = `⏳ ค้าง ${mInfo.missingTasks.length} ชิ้น`;
+      }
 
       const crossBanner = document.getElementById('scannedCrossRoomBanner');
       if (room !== state.currentRoom) {
@@ -1980,7 +2750,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
 
       const unit = sub.units.find(u => u.id === scannedSession.unitId) || sub.units[0];
       scannedSession.taskId = unit.tasks[0] ? unit.tasks[0].id : '';
-      renderScanStep2TasksAndScore();
+      renderScanStep2Card();
     }
 
     function renderScanStep2TasksAndScore() {
@@ -2013,8 +2783,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
               ${hasExisting
-                ? `<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">เดิม: ${existing}/${t.max}</span>`
-                : `<span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 text-[10px]">ยังไม่ส่ง</span>`}
+                ? `<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">ส่งแล้ว: ${existing}/${t.max}</span>`
+                : `<span class="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-700 text-[10px] font-bold">⏳ ยังไม่ส่ง</span>`}
               <span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-[10px] font-bold">เต็ม ${t.max}</span>
             </div>
           </button>
@@ -2085,12 +2855,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       state.currentUnitId = scannedSession.unitId;
 
       updateScore(scannedSession.subjectId, scannedSession.room, stu.code, unit.id, task.id, score, task.max);
-      renderAll();
       playScanBeep(true);
 
       const fb = document.getElementById('scanFeedback');
       fb.className = 'text-xs font-bold text-center py-2.5 px-3 rounded-2xl bg-emerald-100 text-emerald-800';
-      fb.textContent = `✅ บันทึก ${score}/${task.max} คะแนน (${task.name}) ให้ ${stu.name} (${scannedSession.room}) เรียบร้อย!`;
+      fb.textContent = `✅ บันทึก ${score}/${task.max} คะแนน (${task.name}) ให้ ${stu.name} (${scannedSession.room}) ลงแถวรายบุคคลแล้ว!`;
 
       if (scanNextAfterSave) {
         backToScanStep1();
@@ -2100,7 +2869,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
     }
 
     // ============================================================================
-    // 7. ระบบนำเข้าและจัดการรายชื่อนักเรียนกลาง (ป.6-1, ป.6-2, ป.6-3)
+    // 7. ระบบนำเข้าและจัดการรายชื่อนักเรียนรายคน (ตาราง p6_students)
     // ============================================================================
     function openStudentManagerModal() {
       manageRoomCurrent = state.currentRoom;
@@ -2130,14 +2899,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
         const content = String(e.target.result || '').trim();
         if (content) {
           document.getElementById('mgrStudentTextarea').value = content;
-          alert(`📂 โหลดข้อมูลจากไฟล์ "${file.name}" เข้าสู่ช่องข้อความเรียบร้อย กดปุ่ม "บันทึกรายชื่อห้องนี้ขึ้น Supabase" ได้เลยครับ`);
+          alert(`📂 โหลดข้อมูลจากไฟล์ "${file.name}" เข้าสู่ช่องข้อความเรียบร้อย กดปุ่ม "บันทึกรายชื่อรายคนขึ้น Supabase" ได้เลยครับ`);
         }
       };
       reader.readAsText(file, 'UTF-8');
       inputEl.value = '';
     }
 
-    function saveManagedStudents() {
+    async function saveManagedStudents() {
       const raw = document.getElementById('mgrStudentTextarea').value.trim();
       const lines = raw ? raw.split(/\r?\n/) : [];
       const newList = [];
@@ -2163,10 +2932,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       });
 
       state.students[manageRoomCurrent] = newList;
-      saveLocal(true);
+      await saveRoomStudentsToSupabase(manageRoomCurrent);
       renderAll();
       switchManageRoom(manageRoomCurrent);
-      alert(`✅ บันทึกรายชื่อห้อง ${manageRoomCurrent} (${newList.length} คน) และซิงค์ขึ้น Supabase เรียบร้อย!`);
+      alert(`✅ บันทึกรายชื่อห้อง ${manageRoomCurrent} (${newList.length} คน) แยกเป็นรายบุคคลลงตาราง p6_students เรียบร้อย!`);
     }
 
     // ============================================================================
@@ -2266,7 +3035,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.p6_smartscore_db;`;
       u.calcMode = document.getElementById('cfgCalcMode').value;
       u.summaryCols = tempSummaryCols;
       u.tasks = tempTasks;
-      saveLocal(true);
+      saveSubjectConfigToSupabase(state.currentSubject);
       closeModal('unitConfigModal');
       renderAll();
     }
