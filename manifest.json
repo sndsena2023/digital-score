@@ -1,0 +1,17 @@
+{
+  "name": "P.6 SmartScore ระบบบันทึกคะแนนและตัดเกรดชั้น ป.6",
+  "short_name": "P.6 SmartScore",
+  "description": "ระบบบันทึกคะแนนชั้น ป.6 สังคมศึกษา ประวัติศาสตร์ การงานอาชีพ เชื่อมต่อ Supabase Real-time",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6fb",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%230f172a'/><rect x='24' y='24' width='464' height='464' rx='100' fill='none' stroke='%2334d399' stroke-width='16'/><text x='50%' y='38%' dominant-baseline='middle' text-anchor='middle' fill='%2334d399' font-family='sans-serif' font-weight='800' font-size='90'>SMART</text><text x='50%' y='68%' dominant-baseline='middle' text-anchor='middle' fill='%23ffffff' font-family='sans-serif' font-weight='900' font-size='185'>P.6</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
